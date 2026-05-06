@@ -1,0 +1,44 @@
+import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
+
+import { IconComponent } from '../icon/icon.component';
+
+@Component({
+  selector: 'app-modal-shell',
+  standalone: true,
+  imports: [IconComponent],
+  template: `
+    @if (open()) {
+      <div class="fixed inset-0 z-40 bg-slate-950/40" (click)="closed.emit()"></div>
+      <section
+        class="fixed left-1/2 top-1/2 z-50 w-[min(92vw,36rem)] -translate-x-1/2 -translate-y-1/2 rounded-lg bg-white p-5 shadow-soft"
+        role="dialog"
+        aria-modal="true"
+      >
+        <header class="flex items-start justify-between gap-4">
+          <div>
+            <h2 class="text-lg font-semibold text-ink">{{ title() }}</h2>
+            @if (description()) {
+              <p class="mt-1 text-sm text-muted">{{ description() }}</p>
+            }
+          </div>
+          <button
+            type="button"
+            class="rounded-md p-1 text-slate-400 hover:bg-slate-100 hover:text-ink"
+            (click)="closed.emit()"
+            aria-label="Close modal"
+          >
+            <app-icon name="x" [size]="18" />
+          </button>
+        </header>
+        <div class="mt-5"><ng-content /></div>
+      </section>
+    }
+  `,
+  changeDetection: ChangeDetectionStrategy.OnPush,
+})
+export class ModalShellComponent {
+  readonly open = input(false);
+  readonly title = input.required<string>();
+  readonly description = input('');
+  readonly closed = output<void>();
+}

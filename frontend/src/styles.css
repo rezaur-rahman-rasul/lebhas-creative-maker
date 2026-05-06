@@ -1,0 +1,47 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --color-canvas: 248 250 252;
+  --color-surface: 255 255 255;
+  --color-ink: 15 23 42;
+  --color-muted: 100 116 139;
+  --color-border: 226 232 240;
+  color-scheme: light;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  min-height: 100%;
+}
+
+body {
+  min-height: 100%;
+  margin: 0;
+  background: rgb(var(--color-canvas));
+  color: rgb(var(--color-ink));
+  font-family: Inter, "Noto Sans Bengali", system-ui, sans-serif;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+::selection {
+  background: #d6faec;
+  color: #063f31;
+}

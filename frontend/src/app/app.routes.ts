@@ -3,6 +3,7 @@ import { Routes } from '@angular/router';
 import { authGuard } from './core/guards/auth.guard';
 import { guestGuard } from './core/guards/guest.guard';
 import { roleGuard } from './core/guards/role.guard';
+import { workspaceGuard } from './core/guards/workspace.guard';
 
 export const routes: Routes = [
   {
@@ -21,19 +22,28 @@ export const routes: Routes = [
       {
         path: 'login',
         loadComponent: () =>
-          import('./features/auth/login/login-page.component').then((m) => m.LoginPageComponent),
+          import('./features/auth/pages/login/login-page.component').then(
+            (m) => m.LoginPageComponent,
+          ),
       },
       {
         path: 'register',
         loadComponent: () =>
-          import('./features/auth/register/register-page.component').then(
+          import('./features/auth/pages/register/register-page.component').then(
             (m) => m.RegisterPageComponent,
           ),
       },
       {
         path: 'invite/accept',
         loadComponent: () =>
-          import('./features/auth/invite-accept/invite-accept-page.component').then(
+          import('./features/auth/pages/invite-accept/invite-accept-page.component').then(
+            (m) => m.InviteAcceptPageComponent,
+          ),
+      },
+      {
+        path: 'invite/accept/:token',
+        loadComponent: () =>
+          import('./features/auth/pages/invite-accept/invite-accept-page.component').then(
             (m) => m.InviteAcceptPageComponent,
           ),
       },
@@ -59,12 +69,12 @@ export const routes: Routes = [
       },
       {
         path: 'admin',
-        canActivate: [roleGuard(['ADMIN', 'MASTER'])],
+        canActivate: [workspaceGuard, roleGuard(['ADMIN', 'MASTER'])],
         loadChildren: () => import('./features/admin/admin.routes').then((m) => m.ADMIN_ROUTES),
       },
       {
         path: 'crew',
-        canActivate: [roleGuard(['CREW', 'ADMIN', 'MASTER'])],
+        canActivate: [workspaceGuard, roleGuard(['CREW', 'ADMIN', 'MASTER'])],
         loadChildren: () => import('./features/crew/crew.routes').then((m) => m.CREW_ROUTES),
       },
     ],

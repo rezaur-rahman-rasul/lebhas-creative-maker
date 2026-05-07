@@ -35,4 +35,28 @@ public class OpenApiConfiguration {
                 .pathsToMatch("/health", "/liveness", "/readiness", "/actuator/**")
                 .build();
     }
+
+    @Bean
+    GroupedOpenApi authApiGroup() {
+        return GroupedOpenApi.builder()
+                .group("auth")
+                .pathsToMatch("/api/v1/auth/**")
+                .build();
+    }
+
+    @Bean
+    GroupedOpenApi userApiGroup() {
+        return GroupedOpenApi.builder()
+                .group("users")
+                .pathsToMatch("/api/v1/users/**")
+                .build();
+    }
+
+    @Bean
+    GroupedOpenApi workspaceApiGroup() {
+        return GroupedOpenApi.builder()
+                .group("workspaces")
+                .pathsToMatch("/api/v1/workspaces/**")
+                .build();
+    }
 }

@@ -1,35 +1,28 @@
-import { Injectable, computed, inject, signal } from '@angular/core';
+import { Injectable, computed, inject } from '@angular/core';
 
-import { AuthSession } from '../auth/auth.models';
-import { TokenStorageService } from '../auth/token-storage.service';
-import { CurrentUser, UserRole } from '@app/shared/models/user-role.model';
+import { CurrentUserStore } from '../auth/current-user.store';
+import { AuthSession } from '../auth/auth.types';
+import { UserRole } from '@app/features/auth/models/user.models';
 
 @Injectable({ providedIn: 'root' })
 export class AuthStateService {
-  private readonly tokenStorage = inject(TokenStorageService);
-  private readonly accessTokenSignal = signal<string | null>(this.tokenStorage.getAccessToken());
-  private readonly currentUserSignal = signal<CurrentUser | null>(this.tokenStorage.getCurrentUser());
+  private readonly store = inject(CurrentUserStore);
 
-  readonly accessToken = this.accessTokenSignal.asReadonly();
-  readonly currentUser = this.currentUserSignal.asReadonly();
-  readonly isAuthenticated = computed(() => Boolean(this.accessToken() && this.currentUser()));
-  readonly currentRole = computed(() => this.currentUser()?.role ?? null);
-  readonly workspaceId = computed(() => this.currentUser()?.workspaceId ?? null);
+  readonly accessToken = this.store.accessToken;
+  readonly currentUser = this.store.currentUser;
+  readonly isAuthenticated = computed(() => this.store.isAuthenticated());
+  readonly currentRole = computed(() => this.store.currentRole());
+  readonly workspaceId = computed(() => this.store.activeWorkspaceId());
 
   hasAnyRole(roles: readonly UserRole[]): boolean {
-    const role = this.currentRole();
-    return Boolean(role && roles.includes(role));
+    return this.store.hasAnyRole(roles);
   }
 
   setSession(session: AuthSession): void {
-    this.tokenStorage.setSession(session.accessToken, session.user, session.refreshToken);
-    this.accessTokenSignal.set(session.accessToken);
-    this.currentUserSignal.set(session.user);
+    this.store.setSession(session);
   }
 
   clearSession(): void {
-    this.tokenStorage.clear();
-    this.accessTokenSignal.set(null);
-    this.currentUserSignal.set(null);
+    this.store.clearSession();
   }
 }

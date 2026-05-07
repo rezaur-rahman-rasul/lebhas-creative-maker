@@ -1,14 +1,15 @@
 import { CanActivateFn, Router } from '@angular/router';
 import { inject } from '@angular/core';
 
-import { AuthStateService } from '../state/auth-state.service';
+import { CurrentUserStore } from '../auth/current-user.store';
+import { defaultAuthenticatedRoute } from '../auth/permissions';
 
 export const guestGuard: CanActivateFn = () => {
-  const authState = inject(AuthStateService);
+  const authState = inject(CurrentUserStore);
 
   if (!authState.isAuthenticated()) {
     return true;
   }
 
-  return inject(Router).createUrlTree(['/dashboard']);
+  return inject(Router).createUrlTree([defaultAuthenticatedRoute()]);
 };

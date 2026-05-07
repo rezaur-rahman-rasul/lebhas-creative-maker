@@ -1,4 +1,4 @@
-import { HttpClient, HttpParams } from '@angular/common/http';
+import { HttpClient, HttpContext, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 
 import { environment } from '@env/environment';
@@ -8,29 +8,48 @@ import { joinUrl } from '@app/shared/utils/join-url';
 type QueryValue = string | number | boolean | readonly (string | number | boolean)[];
 type QueryParams = Record<string, QueryValue | null | undefined>;
 
+interface RequestOptions {
+  readonly params?: QueryParams;
+  readonly context?: HttpContext;
+}
+
 @Injectable({ providedIn: 'root' })
 export class ApiService {
   private readonly http = inject(HttpClient);
   private readonly baseUrl = environment.apiBaseUrl;
 
-  get<T>(path: string, params?: QueryParams) {
-    return this.http.get<ApiResponse<T>>(this.url(path), { params: this.params(params) });
+  get<T>(path: string, options?: QueryParams | RequestOptions) {
+    const requestOptions = this.normalizeOptions(options);
+    return this.http.get<ApiResponse<T>>(this.url(path), {
+      params: this.params(requestOptions.params),
+      context: requestOptions.context,
+    });
   }
 
-  post<T, TBody = unknown>(path: string, body: TBody) {
-    return this.http.post<ApiResponse<T>>(this.url(path), body);
+  post<T, TBody = unknown>(path: string, body: TBody, options?: RequestOptions) {
+    return this.http.post<ApiResponse<T>>(this.url(path), body, {
+      context: options?.context,
+    });
   }
 
-  put<T, TBody = unknown>(path: string, body: TBody) {
-    return this.http.put<ApiResponse<T>>(this.url(path), body);
+  put<T, TBody = unknown>(path: string, body: TBody, options?: RequestOptions) {
+    return this.http.put<ApiResponse<T>>(this.url(path), body, {
+      context: options?.context,
+    });
   }
 
-  patch<T, TBody = unknown>(path: string, body: TBody) {
-    return this.http.patch<ApiResponse<T>>(this.url(path), body);
+  patch<T, TBody = unknown>(path: string, body: TBody, options?: RequestOptions) {
+    return this.http.patch<ApiResponse<T>>(this.url(path), body, {
+      context: options?.context,
+    });
   }
 
-  delete<T>(path: string, params?: QueryParams) {
-    return this.http.delete<ApiResponse<T>>(this.url(path), { params: this.params(params) });
+  delete<T>(path: string, options?: QueryParams | RequestOptions) {
+    const requestOptions = this.normalizeOptions(options);
+    return this.http.delete<ApiResponse<T>>(this.url(path), {
+      params: this.params(requestOptions.params),
+      context: requestOptions.context,
+    });
   }
 
   private url(path: string): string {
@@ -55,5 +74,17 @@ export class ApiService {
     }
 
     return httpParams;
+  }
+
+  private normalizeOptions(options?: QueryParams | RequestOptions): RequestOptions {
+    if (!options) {
+      return {};
+    }
+
+    if ('params' in options || 'context' in options) {
+      return options as RequestOptions;
+    }
+
+    return { params: options as QueryParams };
   }
 }

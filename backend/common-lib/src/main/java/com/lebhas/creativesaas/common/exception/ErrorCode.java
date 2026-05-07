@@ -10,6 +10,16 @@ public enum ErrorCode {
     RESOURCE_NOT_FOUND("COMMON-404", "Resource not found", HttpStatus.NOT_FOUND),
     BUSINESS_RULE_VIOLATION("COMMON-409", "Business rule violation", HttpStatus.CONFLICT),
     TENANT_HEADER_INVALID("TENANT-400", "Workspace header is invalid", HttpStatus.BAD_REQUEST),
+    WORKSPACE_CONTEXT_REQUIRED("TENANT-401", "Workspace context is required", HttpStatus.BAD_REQUEST),
+    WORKSPACE_ACCESS_DENIED("TENANT-403", "Workspace access denied", HttpStatus.FORBIDDEN),
+    INVALID_CREDENTIALS("AUTH-401", "Invalid email or password", HttpStatus.UNAUTHORIZED),
+    TOKEN_INVALID("AUTH-401-01", "Token is invalid", HttpStatus.UNAUTHORIZED),
+    TOKEN_EXPIRED("AUTH-401-02", "Token has expired", HttpStatus.UNAUTHORIZED),
+    TOKEN_REVOKED("AUTH-401-03", "Token has been revoked", HttpStatus.UNAUTHORIZED),
+    REFRESH_TOKEN_INVALID("AUTH-401-04", "Refresh token is invalid", HttpStatus.UNAUTHORIZED),
+    INVITATION_INVALID("AUTH-400-01", "Invitation is invalid", HttpStatus.BAD_REQUEST),
+    EMAIL_ALREADY_EXISTS("USER-409-01", "Email is already registered", HttpStatus.CONFLICT),
+    USER_INACTIVE("USER-403-01", "User account is not active", HttpStatus.FORBIDDEN),
     INTERNAL_ERROR("COMMON-500", "Unexpected server error", HttpStatus.INTERNAL_SERVER_ERROR);
 
     private final String code;

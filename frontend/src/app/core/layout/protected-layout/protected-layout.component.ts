@@ -1,21 +1,20 @@
 import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
-import { Router, RouterOutlet } from '@angular/router';
+import { RouterOutlet } from '@angular/router';
 
-import { AuthService } from '@app/core/auth/auth.service';
-import { AuthStateService } from '@app/core/state/auth-state.service';
+import { CurrentUserStore } from '@app/core/auth/current-user.store';
 import { LayoutStateService } from '@app/core/state/layout-state.service';
 import { LoadingStateService } from '@app/core/state/loading-state.service';
-import { UserRole } from '@app/shared/models/user-role.model';
-import { AvatarComponent } from '@app/shared/components/avatar/avatar.component';
+import { UserRole } from '@app/features/auth/models/user.models';
+import { BadgeComponent } from '@app/shared/components/badge/badge.component';
 import { IconComponent } from '@app/shared/components/icon/icon.component';
 import { SidebarItemComponent } from '@app/shared/components/sidebar-item/sidebar-item.component';
 import { SpinnerComponent } from '@app/shared/components/spinner/spinner.component';
+import { UserProfileDropdownComponent } from '../user-profile-dropdown/user-profile-dropdown.component';
 
 interface NavigationItem {
   readonly label: string;
   readonly icon: string;
   readonly route: string;
-  readonly roles?: readonly UserRole[];
 }
 
 @Component({
@@ -23,10 +22,11 @@ interface NavigationItem {
   standalone: true,
   imports: [
     RouterOutlet,
-    AvatarComponent,
+    BadgeComponent,
     IconComponent,
     SidebarItemComponent,
     SpinnerComponent,
+    UserProfileDropdownComponent,
   ],
   template: `
     <div class="min-h-screen bg-canvas text-ink">
@@ -64,16 +64,24 @@ interface NavigationItem {
         </nav>
 
         <div class="border-t border-border p-3">
-          <button
-            type="button"
-            class="flex h-10 w-full items-center gap-3 rounded-md px-3 text-sm font-medium text-slate-600 transition hover:bg-slate-100 hover:text-ink"
-            (click)="signOut()"
-          >
-            <app-icon name="log-out" [size]="18" />
+          <div class="rounded-lg border border-border bg-slate-50 px-3 py-3">
             @if (!layout.sidebarCollapsed()) {
-              <span>Sign out</span>
+              <div class="flex items-center justify-between gap-3">
+                <div>
+                  <p class="text-xs font-medium uppercase tracking-[0.12em] text-muted">Role scope</p>
+                  <p class="mt-1 text-sm font-semibold text-ink">{{ auth.currentRole() }}</p>
+                </div>
+                <app-badge [tone]="roleBadgeTone()">{{ auth.currentRole() }}</app-badge>
+              </div>
+              @if (auth.activeWorkspaceId()) {
+                <p class="mt-3 truncate text-xs text-muted">{{ auth.activeWorkspaceId() }}</p>
+              }
+            } @else {
+              <div class="grid place-items-center">
+                <app-icon name="shield-check" [size]="18" />
+              </div>
             }
-          </button>
+          </div>
         </div>
       </aside>
 
@@ -122,12 +130,8 @@ interface NavigationItem {
             <app-icon name="bell" [size]="19" />
           </button>
 
-          <div class="flex items-center gap-3 border-l border-border pl-3">
-            <app-avatar [name]="auth.currentUser()?.name ?? 'User'" />
-            <div class="hidden leading-tight sm:block">
-              <p class="text-sm font-semibold text-ink">{{ auth.currentUser()?.name }}</p>
-              <p class="text-xs text-muted">{{ auth.currentUser()?.role }}</p>
-            </div>
+          <div class="border-l border-border pl-3">
+            <app-user-profile-dropdown />
           </div>
         </header>
 
@@ -147,21 +151,48 @@ interface NavigationItem {
 })
 export class ProtectedLayoutComponent {
   protected readonly layout = inject(LayoutStateService);
-  protected readonly auth = inject(AuthStateService);
+  protected readonly auth = inject(CurrentUserStore);
   protected readonly loading = inject(LoadingStateService);
-  private readonly authService = inject(AuthService);
-  private readonly router = inject(Router);
 
-  private readonly items: readonly NavigationItem[] = [
+  private readonly masterNavigation: readonly NavigationItem[] = [
     { label: 'Dashboard', icon: 'layout-dashboard', route: '/dashboard' },
-    { label: 'Master', icon: 'shield-check', route: '/master', roles: ['MASTER'] },
-    { label: 'Admin', icon: 'building-2', route: '/admin', roles: ['ADMIN', 'MASTER'] },
-    { label: 'Crew', icon: 'users', route: '/crew', roles: ['CREW', 'ADMIN', 'MASTER'] },
+    { label: 'Clients', icon: 'folder-kanban', route: '/master/clients' },
+    { label: 'Users', icon: 'users', route: '/master/users' },
+    { label: 'Credits', icon: 'credit-card', route: '/master/credits' },
+    { label: 'Payments', icon: 'credit-card', route: '/master/payments' },
+    { label: 'Settings', icon: 'settings', route: '/master/settings' },
   ];
 
-  protected readonly navigation = computed(() =>
-    this.items.filter((item) => !item.roles || this.auth.hasAnyRole(item.roles)),
-  );
+  private readonly adminNavigation: readonly NavigationItem[] = [
+    { label: 'Dashboard', icon: 'layout-dashboard', route: '/dashboard' },
+    { label: 'Workspace', icon: 'building-2', route: '/admin' },
+    { label: 'Team', icon: 'users', route: '/admin/team' },
+    { label: 'Brand Profile', icon: 'badge-check', route: '/admin/brand-profile' },
+    { label: 'Assets', icon: 'image', route: '/admin/assets' },
+    { label: 'Creatives', icon: 'wand-sparkles', route: '/admin/creatives' },
+    { label: 'Billing', icon: 'credit-card', route: '/admin/billing' },
+  ];
+
+  private readonly crewNavigation: readonly NavigationItem[] = [
+    { label: 'Dashboard', icon: 'layout-dashboard', route: '/dashboard' },
+    { label: 'Assigned Work', icon: 'folder-kanban', route: '/crew' },
+    { label: 'Generate Creative', icon: 'sparkles', route: '/crew/generate-creative' },
+    { label: 'Submissions', icon: 'cloud-upload', route: '/crew/submissions' },
+  ];
+
+  protected readonly navigation = computed(() => {
+    const role = this.auth.currentRole();
+    switch (role) {
+      case 'MASTER':
+        return this.masterNavigation;
+      case 'ADMIN':
+        return this.adminNavigation;
+      case 'CREW':
+        return this.crewNavigation;
+      default:
+        return this.adminNavigation;
+    }
+  });
 
   protected readonly sidebarClasses = computed(() =>
     [
@@ -178,8 +209,8 @@ export class ProtectedLayoutComponent {
     ].join(' '),
   );
 
-  protected signOut(): void {
-    this.authService.signOut();
-    void this.router.navigateByUrl('/login');
+  protected roleBadgeTone(): 'brand' | 'blue' | 'red' | 'neutral' {
+    const role = this.auth.currentRole();
+    return role === 'MASTER' ? 'red' : role === 'CREW' ? 'blue' : 'brand';
   }
 }

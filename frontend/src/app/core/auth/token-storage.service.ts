@@ -1,10 +1,13 @@
 import { Injectable } from '@angular/core';
 
-import { CurrentUser } from '@app/shared/models/user-role.model';
+import { StoredAuthSession } from './auth.types';
 
 const ACCESS_TOKEN_KEY = 'creative_saas.access_token';
 const REFRESH_TOKEN_KEY = 'creative_saas.refresh_token';
 const CURRENT_USER_KEY = 'creative_saas.current_user';
+const ACCESS_TOKEN_EXPIRES_AT_KEY = 'creative_saas.access_token_expires_at';
+const REFRESH_TOKEN_EXPIRES_AT_KEY = 'creative_saas.refresh_token_expires_at';
+const ACTIVE_WORKSPACE_ID_KEY = 'creative_saas.active_workspace_id';
 
 @Injectable({ providedIn: 'root' })
 export class TokenStorageService {
@@ -16,26 +19,43 @@ export class TokenStorageService {
     return this.read(REFRESH_TOKEN_KEY);
   }
 
-  getCurrentUser(): CurrentUser | null {
+  getSession(): StoredAuthSession | null {
     const value = this.read(CURRENT_USER_KEY);
-    if (!value) {
+    const accessToken = this.read(ACCESS_TOKEN_KEY);
+    const refreshToken = this.read(REFRESH_TOKEN_KEY);
+    const accessTokenExpiresAt = this.read(ACCESS_TOKEN_EXPIRES_AT_KEY);
+    const refreshTokenExpiresAt = this.read(REFRESH_TOKEN_EXPIRES_AT_KEY);
+
+    if (!value || !accessToken || !refreshToken || !accessTokenExpiresAt || !refreshTokenExpiresAt) {
       return null;
     }
 
     try {
-      return JSON.parse(value) as CurrentUser;
+      return {
+        accessToken,
+        refreshToken,
+        accessTokenExpiresAt,
+        refreshTokenExpiresAt,
+        user: JSON.parse(value) as StoredAuthSession['user'],
+        activeWorkspaceId: this.read(ACTIVE_WORKSPACE_ID_KEY),
+      };
     } catch {
       this.clear();
       return null;
     }
   }
 
-  setSession(accessToken: string, user: CurrentUser, refreshToken?: string): void {
-    this.write(ACCESS_TOKEN_KEY, accessToken);
-    this.write(CURRENT_USER_KEY, JSON.stringify(user));
+  setSession(session: StoredAuthSession): void {
+    this.write(ACCESS_TOKEN_KEY, session.accessToken);
+    this.write(REFRESH_TOKEN_KEY, session.refreshToken);
+    this.write(ACCESS_TOKEN_EXPIRES_AT_KEY, session.accessTokenExpiresAt);
+    this.write(REFRESH_TOKEN_EXPIRES_AT_KEY, session.refreshTokenExpiresAt);
+    this.write(CURRENT_USER_KEY, JSON.stringify(session.user));
 
-    if (refreshToken) {
-      this.write(REFRESH_TOKEN_KEY, refreshToken);
+    if (session.activeWorkspaceId) {
+      this.write(ACTIVE_WORKSPACE_ID_KEY, session.activeWorkspaceId);
+    } else if (this.available()) {
+      localStorage.removeItem(ACTIVE_WORKSPACE_ID_KEY);
     }
   }
 
@@ -46,7 +66,10 @@ export class TokenStorageService {
 
     localStorage.removeItem(ACCESS_TOKEN_KEY);
     localStorage.removeItem(REFRESH_TOKEN_KEY);
+    localStorage.removeItem(ACCESS_TOKEN_EXPIRES_AT_KEY);
+    localStorage.removeItem(REFRESH_TOKEN_EXPIRES_AT_KEY);
     localStorage.removeItem(CURRENT_USER_KEY);
+    localStorage.removeItem(ACTIVE_WORKSPACE_ID_KEY);
   }
 
   private read(key: string): string | null {

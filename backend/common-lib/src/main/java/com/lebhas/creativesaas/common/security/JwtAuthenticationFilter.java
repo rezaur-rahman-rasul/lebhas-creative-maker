@@ -1,6 +1,7 @@
 package com.lebhas.creativesaas.common.security;
 
 import com.lebhas.creativesaas.common.constants.CommonHeaders;
+import com.lebhas.creativesaas.common.security.authorization.RolePermissionRegistry;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -13,6 +14,7 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
+import java.util.LinkedHashSet;
 import java.util.Set;
 
 @Component
@@ -21,9 +23,11 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private static final String BEARER_PREFIX = "Bearer ";
 
     private final JwtTokenParser tokenParser;
+    private final RolePermissionRegistry rolePermissionRegistry;
 
-    public JwtAuthenticationFilter(JwtTokenParser tokenParser) {
+    public JwtAuthenticationFilter(JwtTokenParser tokenParser, RolePermissionRegistry rolePermissionRegistry) {
         this.tokenParser = tokenParser;
+        this.rolePermissionRegistry = rolePermissionRegistry;
     }
 
     @Override
@@ -41,9 +45,15 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private void authenticate(AuthenticatedPrincipal principal) {
         Set<Role> roles = principal.roles() == null ? Set.of() : principal.roles();
-        var authorities = roles.stream()
-                .map(role -> new SimpleGrantedAuthority("ROLE_" + role.name()))
-                .toList();
+        Set<SimpleGrantedAuthority> authorities = new LinkedHashSet<>();
+        roles.stream()
+                .map(AuthorityNames::role)
+                .map(SimpleGrantedAuthority::new)
+                .forEach(authorities::add);
+        rolePermissionRegistry.resolve(roles).stream()
+                .map(AuthorityNames::permission)
+                .map(SimpleGrantedAuthority::new)
+                .forEach(authorities::add);
         var authentication = new UsernamePasswordAuthenticationToken(principal, null, authorities);
         SecurityContextHolder.getContext().setAuthentication(authentication);
     }

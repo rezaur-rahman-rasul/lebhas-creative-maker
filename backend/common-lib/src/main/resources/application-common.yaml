@@ -87,6 +87,13 @@ platform:
     allowed-headers: "*"
     allow-credentials: false
     max-age-seconds: 3600
+    jwt:
+      issuer: ${JWT_ISSUER:creative-saas-platform}
+      secret-base64: ${JWT_SECRET_BASE64:Q3JlYXRpdmVTYWFTUGxhdGZvcm1EZXYyMDI2U2lnbmluZ1NlY3JldEJhc2U2NEtleUZvckxvY2FsVXNlT25seQ==}
+      access-token-ttl: ${JWT_ACCESS_TTL:15m}
+      refresh-token-ttl: ${JWT_REFRESH_TTL:30d}
+      invitation-token-ttl: ${JWT_INVITATION_TTL:7d}
+      clock-skew: ${JWT_CLOCK_SKEW:30s}
   redis:
     token-namespace: creative-saas:tokens
     rate-limit-namespace: creative-saas:rate-limits
@@ -106,7 +113,7 @@ spring:
     activate:
       on-profile: local
   datasource:
-    url: jdbc:postgresql://${POSTGRES_HOST:localhost}:${POSTGRES_PORT:5432}/${POSTGRES_DB:postgres}
+    url: jdbc:postgresql://${POSTGRES_HOST:localhost}:${POSTGRES_PORT:5432}/${POSTGRES_DB:creative_saas}
   jpa:
     show-sql: false
 

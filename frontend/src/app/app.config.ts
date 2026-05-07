@@ -11,6 +11,7 @@ import { authInterceptor } from './core/interceptors/auth.interceptor';
 import { correlationIdInterceptor } from './core/interceptors/correlation-id.interceptor';
 import { errorInterceptor } from './core/interceptors/error.interceptor';
 import { loadingInterceptor } from './core/interceptors/loading.interceptor';
+import { refreshTokenInterceptor } from './core/interceptors/refresh-token.interceptor';
 import { tenantInterceptor } from './core/interceptors/tenant.interceptor';
 import { providePlatformIcons } from './core/icons/platform-icons.provider';
 
@@ -26,6 +27,7 @@ export const appConfig: ApplicationConfig = {
         tenantInterceptor,
         authInterceptor,
         errorInterceptor,
+        refreshTokenInterceptor,
       ]),
     ),
     providePlatformIcons(),

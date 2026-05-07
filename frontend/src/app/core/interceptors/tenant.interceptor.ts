@@ -1,10 +1,11 @@
 import { HttpInterceptorFn } from '@angular/common/http';
 import { inject } from '@angular/core';
 
-import { AuthStateService } from '../state/auth-state.service';
+import { environment } from '@env/environment';
+import { CurrentUserStore } from '../auth/current-user.store';
 
 export const tenantInterceptor: HttpInterceptorFn = (request, next) => {
-  const workspaceId = inject(AuthStateService).workspaceId();
+  const workspaceId = inject(CurrentUserStore).activeWorkspaceId();
 
   if (!workspaceId) {
     return next(request);
@@ -13,7 +14,7 @@ export const tenantInterceptor: HttpInterceptorFn = (request, next) => {
   return next(
     request.clone({
       setHeaders: {
-        'X-Workspace-ID': workspaceId,
+        [environment.workspaceHeaderName]: workspaceId,
       },
     }),
   );

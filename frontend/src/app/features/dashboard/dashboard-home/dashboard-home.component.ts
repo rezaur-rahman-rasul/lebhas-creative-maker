@@ -52,7 +52,7 @@ import { PageHeaderComponent } from '@app/shared/components/page-header/page-hea
         <div class="flex items-center justify-between gap-3">
           <div>
             <h2 class="text-base font-semibold text-ink">Workspace readiness</h2>
-            <p class="mt-1 text-sm text-muted">Day 1 foundation checkpoints</p>
+            <p class="mt-1 text-sm text-muted">Day 2 authentication foundation checkpoints</p>
           </div>
           <app-badge tone="brand">Foundation</app-badge>
         </div>
@@ -77,7 +77,7 @@ import { PageHeaderComponent } from '@app/shared/components/page-header/page-hea
         title="Creative pipeline"
         description="Campaign and creative generation surfaces are intentionally left for future implementation days."
       >
-        <a routerLink="/admin">
+        <a [routerLink]="primaryRoute()">
           <app-button variant="secondary" icon="chevron-right">Open workspace shell</app-button>
         </a>
       </app-empty-state>
@@ -90,9 +90,20 @@ export class DashboardHomeComponent {
 
   protected readonly description = computed(() => {
     const user = this.auth.currentUser();
-    return user
-      ? `${user.workspaceName} is ready for ${user.role.toLowerCase()} workflows.`
-      : 'Workspace shell is ready.';
+    if (!user) {
+      return 'Workspace shell is ready.';
+    }
+
+    if (!user.workspaceName) {
+      return `Your ${user.role.toLowerCase()} session is active and ready for protected workflows.`;
+    }
+
+    return `${user.workspaceName} is ready for ${user.role.toLowerCase()} workflows.`;
+  });
+
+  protected readonly primaryRoute = computed(() => {
+    const role = this.auth.currentRole();
+    return role === 'MASTER' ? '/master' : role === 'CREW' ? '/crew' : '/admin';
   });
 
   protected readonly metrics = [

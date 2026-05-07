@@ -1,13 +1,2 @@
-import { CurrentUser, UserRole } from '@app/shared/models/user-role.model';
-
-export interface AuthSession {
-  readonly accessToken: string;
-  readonly refreshToken?: string;
-  readonly user: CurrentUser;
-}
-
-export interface LoginPayload {
-  readonly email: string;
-  readonly password: string;
-  readonly role: UserRole;
-}
+export type { AuthSession } from './auth.types';
+export type { LoginRequest as LoginPayload } from '@app/features/auth/models/auth.models';

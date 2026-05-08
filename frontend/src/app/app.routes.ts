@@ -14,7 +14,7 @@ export const routes: Routes = [
   {
     path: '',
     loadComponent: () =>
-      import('./core/layout/public-layout/public-layout.component').then(
+      import('./core/layout/public-layout/public-layout').then(
         (m) => m.PublicLayoutComponent,
       ),
     canActivate: [guestGuard],
@@ -22,28 +22,28 @@ export const routes: Routes = [
       {
         path: 'login',
         loadComponent: () =>
-          import('./features/auth/pages/login/login-page.component').then(
+          import('./features/auth/login/login').then(
             (m) => m.LoginPageComponent,
           ),
       },
       {
         path: 'register',
         loadComponent: () =>
-          import('./features/auth/pages/register/register-page.component').then(
+          import('./features/auth/register/register').then(
             (m) => m.RegisterPageComponent,
           ),
       },
       {
         path: 'invite/accept',
         loadComponent: () =>
-          import('./features/auth/pages/invite-accept/invite-accept-page.component').then(
+          import('./features/auth/invite-accept/invite-accept').then(
             (m) => m.InviteAcceptPageComponent,
           ),
       },
       {
         path: 'invite/accept/:token',
         loadComponent: () =>
-          import('./features/auth/pages/invite-accept/invite-accept-page.component').then(
+          import('./features/auth/invite-accept/invite-accept').then(
             (m) => m.InviteAcceptPageComponent,
           ),
       },
@@ -52,7 +52,7 @@ export const routes: Routes = [
   {
     path: '',
     loadComponent: () =>
-      import('./core/layout/protected-layout/protected-layout.component').then(
+      import('./core/layout/protected-layout/protected-layout').then(
         (m) => m.ProtectedLayoutComponent,
       ),
     canActivate: [authGuard],

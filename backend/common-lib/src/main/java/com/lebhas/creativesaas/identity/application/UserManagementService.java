@@ -2,6 +2,7 @@ package com.lebhas.creativesaas.identity.application;
 
 import com.lebhas.creativesaas.common.exception.BusinessException;
 import com.lebhas.creativesaas.common.exception.ErrorCode;
+import com.lebhas.creativesaas.common.security.Permission;
 import com.lebhas.creativesaas.common.security.Role;
 import com.lebhas.creativesaas.common.security.authorization.RolePermissionRegistry;
 import com.lebhas.creativesaas.common.security.context.CurrentUser;
@@ -16,13 +17,17 @@ import com.lebhas.creativesaas.identity.domain.WorkspaceMembershipEntity;
 import com.lebhas.creativesaas.identity.domain.WorkspaceMembershipStatus;
 import com.lebhas.creativesaas.identity.infrastructure.persistence.UserRepository;
 import com.lebhas.creativesaas.identity.infrastructure.persistence.WorkspaceMembershipRepository;
+import com.lebhas.creativesaas.workspace.application.WorkspacePermissionPolicy;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @Service
 public class UserManagementService {
@@ -33,6 +38,7 @@ public class UserManagementService {
     private final WorkspaceAuthorizationService workspaceAuthorizationService;
     private final IdentityViewMapper identityViewMapper;
     private final RolePermissionRegistry rolePermissionRegistry;
+    private final WorkspacePermissionPolicy workspacePermissionPolicy;
 
     public UserManagementService(
             UserRepository userRepository,
@@ -40,7 +46,8 @@ public class UserManagementService {
             CurrentUserContext currentUserContext,
             WorkspaceAuthorizationService workspaceAuthorizationService,
             IdentityViewMapper identityViewMapper,
-            RolePermissionRegistry rolePermissionRegistry
+            RolePermissionRegistry rolePermissionRegistry,
+            WorkspacePermissionPolicy workspacePermissionPolicy
     ) {
         this.userRepository = userRepository;
         this.workspaceMembershipRepository = workspaceMembershipRepository;
@@ -48,6 +55,7 @@ public class UserManagementService {
         this.workspaceAuthorizationService = workspaceAuthorizationService;
         this.identityViewMapper = identityViewMapper;
         this.rolePermissionRegistry = rolePermissionRegistry;
+        this.workspacePermissionPolicy = workspacePermissionPolicy;
     }
 
     @Transactional(readOnly = true)
@@ -61,8 +69,11 @@ public class UserManagementService {
                     .toList();
         }
         UUID workspaceId = workspaceAuthorizationService.requireWorkspaceAccess(TenantContext.getWorkspaceId().orElse(null));
+        Map<UUID, WorkspaceMembershipEntity> membershipsByUserId = workspaceMembershipRepository.findAllByWorkspaceIdAndDeletedFalse(workspaceId).stream()
+                .filter(WorkspaceMembershipEntity::isActive)
+                .collect(Collectors.toMap(WorkspaceMembershipEntity::getUserId, Function.identity(), (left, right) -> left));
         return userRepository.findWorkspaceUsers(workspaceId, status).stream()
-                .map(user -> identityViewMapper.toUserView(user, workspaceId, resolveUserRole(user, workspaceId), rolePermissionRegistry.resolve(Set.of(resolveUserRole(user, workspaceId)))))
+                .map(user -> toUserView(user, workspaceId, membershipsByUserId.get(user.getId())))
                 .toList();
     }
 
@@ -77,8 +88,8 @@ public class UserManagementService {
         UUID workspaceId = workspaceAuthorizationService.requireWorkspaceAccess(TenantContext.getWorkspaceId().orElse(null));
         UserEntity user = userRepository.findWorkspaceUserById(workspaceId, userId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.RESOURCE_NOT_FOUND));
-        Role role = resolveUserRole(user, workspaceId);
-        return identityViewMapper.toUserView(user, workspaceId, role, rolePermissionRegistry.resolve(Set.of(role)));
+        WorkspaceMembershipEntity membership = workspaceAuthorizationService.requireActiveMembership(user.getId(), workspaceId);
+        return toUserView(user, workspaceId, membership);
     }
 
     @Transactional
@@ -88,12 +99,19 @@ public class UserManagementService {
         Role newRole = command.role() == null ? user.getRole() : command.role();
         guardRoleMutation(newRole, user);
         user.updateProfile(command.firstName(), command.lastName(), command.email(), command.phone());
-        user.assignRole(newRole);
         UUID workspaceId = TenantContext.getWorkspaceId().orElse(null);
         if (workspaceId != null && !newRole.isMaster()) {
             WorkspaceMembershipEntity membership = workspaceAuthorizationService.requireActiveMembership(user.getId(), workspaceId);
             membership.assignRole(newRole);
+            if (newRole == Role.ADMIN) {
+                membership.replacePermissions(Set.of());
+            } else {
+                membership.replacePermissions(workspacePermissionPolicy.normalizeCrewPermissions(membership.getPermissions()));
+            }
             workspaceMembershipRepository.save(membership);
+            user.assignRole(resolveHighestWorkspaceRole(user.getId(), newRole));
+        } else {
+            user.assignRole(newRole);
         }
         userRepository.save(user);
         return buildUserView(user, workspaceId);
@@ -157,14 +175,25 @@ public class UserManagementService {
     }
 
     private UserView buildUserView(UserEntity user, UUID workspaceId) {
-        Role role = workspaceId == null ? user.getRole() : resolveUserRole(user, workspaceId);
-        return identityViewMapper.toUserView(user, workspaceId, role, rolePermissionRegistry.resolve(Set.of(role)));
+        if (workspaceId == null) {
+            return identityViewMapper.toUserView(user, null, user.getRole(), rolePermissionRegistry.resolve(Set.of(user.getRole())));
+        }
+        WorkspaceMembershipEntity membership = workspaceAuthorizationService.requireActiveMembership(user.getId(), workspaceId);
+        return toUserView(user, workspaceId, membership);
     }
 
-    private Role resolveUserRole(UserEntity user, UUID workspaceId) {
-        if (user.getRole().isMaster() || workspaceId == null) {
-            return user.getRole();
+    private UserView toUserView(UserEntity user, UUID workspaceId, WorkspaceMembershipEntity membership) {
+        if (membership == null) {
+            return identityViewMapper.toUserView(user, workspaceId, user.getRole(), rolePermissionRegistry.resolve(Set.of(user.getRole())));
         }
-        return workspaceAuthorizationService.requireActiveMembership(user.getId(), workspaceId).getRole();
+        Set<Permission> permissions = workspacePermissionPolicy.resolveEffectivePermissions(membership.getRole(), membership.getPermissions());
+        return identityViewMapper.toUserView(user, workspaceId, membership.getRole(), permissions);
+    }
+
+    private Role resolveHighestWorkspaceRole(UUID userId, Role fallbackRole) {
+        return workspaceMembershipRepository.findAllByUserIdAndStatusAndDeletedFalse(userId, WorkspaceMembershipStatus.ACTIVE).stream()
+                .map(WorkspaceMembershipEntity::getRole)
+                .reduce((left, right) -> left == Role.ADMIN || right == Role.ADMIN ? Role.ADMIN : Role.CREW)
+                .orElse(fallbackRole);
     }
 }

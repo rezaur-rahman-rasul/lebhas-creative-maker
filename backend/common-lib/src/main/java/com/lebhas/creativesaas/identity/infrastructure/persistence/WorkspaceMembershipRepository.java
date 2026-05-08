@@ -12,7 +12,13 @@ public interface WorkspaceMembershipRepository extends JpaRepository<WorkspaceMe
 
     Optional<WorkspaceMembershipEntity> findByUserIdAndWorkspaceIdAndDeletedFalse(UUID userId, UUID workspaceId);
 
+    Optional<WorkspaceMembershipEntity> findByWorkspaceIdAndUserIdAndDeletedFalse(UUID workspaceId, UUID userId);
+
     List<WorkspaceMembershipEntity> findAllByUserIdAndStatusAndDeletedFalse(UUID userId, WorkspaceMembershipStatus status);
+
+    List<WorkspaceMembershipEntity> findAllByUserIdAndDeletedFalse(UUID userId);
+
+    List<WorkspaceMembershipEntity> findAllByWorkspaceIdAndDeletedFalse(UUID workspaceId);
 
     long countByUserIdAndStatusAndDeletedFalse(UUID userId, WorkspaceMembershipStatus status);
 

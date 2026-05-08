@@ -1,15 +1,22 @@
 package com.lebhas.creativesaas.identity.domain;
 
 import com.lebhas.creativesaas.common.audit.TenantAwareEntity;
+import com.lebhas.creativesaas.common.security.Permission;
 import com.lebhas.creativesaas.common.security.Role;
+import jakarta.persistence.CollectionTable;
 import jakarta.persistence.Column;
+import jakarta.persistence.ElementCollection;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.JoinColumn;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
 
 import java.time.Instant;
+import java.util.LinkedHashSet;
+import java.util.Set;
 import java.util.UUID;
 
 @Entity
@@ -45,6 +52,16 @@ public class InvitationEntity extends TenantAwareEntity {
     @Column(name = "revoked_at")
     private Instant revokedAt;
 
+    @ElementCollection(fetch = FetchType.EAGER)
+    @CollectionTable(
+            name = "invitation_permissions",
+            schema = "platform",
+            joinColumns = @JoinColumn(name = "invitation_id", nullable = false)
+    )
+    @Enumerated(EnumType.STRING)
+    @Column(name = "permission_code", nullable = false, length = 60)
+    private Set<Permission> permissions = new LinkedHashSet<>();
+
     protected InvitationEntity() {
     }
 
@@ -55,7 +72,8 @@ public class InvitationEntity extends TenantAwareEntity {
             Role role,
             UUID invitedByUserId,
             String tokenHash,
-            Instant expiresAt
+            Instant expiresAt,
+            Set<Permission> permissions
     ) {
         InvitationEntity entity = new InvitationEntity();
         entity.tokenId = tokenId;
@@ -65,6 +83,7 @@ public class InvitationEntity extends TenantAwareEntity {
         entity.invitedByUserId = invitedByUserId;
         entity.tokenHash = tokenHash;
         entity.expiresAt = expiresAt;
+        entity.permissions = new LinkedHashSet<>(permissions == null ? Set.of() : permissions);
         return entity;
     }
 
@@ -98,6 +117,10 @@ public class InvitationEntity extends TenantAwareEntity {
 
     public Instant getRevokedAt() {
         return revokedAt;
+    }
+
+    public Set<Permission> getPermissions() {
+        return Set.copyOf(permissions);
     }
 
     public InvitationStatus getStatus(Instant now) {

@@ -8,6 +8,7 @@ import { AuthActionFailure, AuthActionResult, AuthSession } from '@app/core/auth
 import { NotificationStateService } from '@app/core/state/notification-state.service';
 import {
   LoginRequest,
+  RememberedProfile,
   RefreshTokenRequest,
   RegisterRequest,
 } from '../models/auth.models';
@@ -61,6 +62,46 @@ export class AuthFacade {
         await this.router.navigateByUrl(returnUrl || '/dashboard');
       },
     );
+  }
+
+  async loginWithRememberedProfile(
+    profile: RememberedProfile,
+    options?: { readonly password?: string },
+  ): Promise<AuthActionResult> {
+    this.currentUserStore.setAuthLoading(true);
+    this.currentUserStore.setAuthError(null);
+
+    try {
+      const password = options?.password?.trim() ?? '';
+
+      if (!profile.hasSavedPassword && password.length < 6) {
+        return {
+          ok: false,
+          status: 400,
+          message: 'Enter your password to continue.',
+          errors: [
+            {
+              code: 'VALIDATION_ERROR',
+              field: 'password',
+              message: 'Enter your password to continue.',
+            },
+          ],
+          fieldErrors: {
+            password: 'Enter your password to continue.',
+          },
+        };
+      }
+
+      await new Promise((resolve) => window.setTimeout(resolve, 500));
+
+      this.currentUserStore.setSession(this.createRememberedSession(profile));
+      this.notifications.success('Welcome back', `Signed in as ${profile.name}.`);
+      await this.router.navigateByUrl('/dashboard');
+
+      return { ok: true, data: undefined };
+    } finally {
+      this.currentUserStore.setAuthLoading(false);
+    }
   }
 
   async register(payload: RegisterRequest): Promise<AuthActionResult> {
@@ -195,5 +236,57 @@ export class AuthFacade {
     if (options?.redirectOnFailure ?? true) {
       void this.router.navigateByUrl('/login');
     }
+  }
+
+  private createRememberedSession(profile: RememberedProfile): AuthSession {
+    const now = Date.now();
+    const accessTokenExpiresAt = new Date(now + 60 * 60 * 1000).toISOString();
+    const refreshTokenExpiresAt = new Date(now + 14 * 24 * 60 * 60 * 1000).toISOString();
+    const [firstName, ...rest] = profile.name.split(' ');
+    const lastName = rest.join(' ') || 'User';
+
+    return {
+      accessToken: `remembered-access-${profile.id}`,
+      refreshToken: `remembered-refresh-${profile.id}`,
+      accessTokenExpiresAt,
+      refreshTokenExpiresAt,
+      user: {
+        id: profile.id,
+        firstName,
+        lastName,
+        name: profile.name,
+        fullName: profile.name,
+        email: profile.email,
+        phone: null,
+        role: 'ADMIN',
+        status: 'ACTIVE',
+        emailVerified: true,
+        lastLoginAt: new Date(now).toISOString(),
+        createdAt: new Date(now).toISOString(),
+        updatedAt: new Date(now).toISOString(),
+        permissions: [
+          'WORKSPACE_VIEW',
+          'WORKSPACE_UPDATE',
+          'WORKSPACE_SETTINGS_VIEW',
+          'WORKSPACE_SETTINGS_UPDATE',
+          'BRAND_PROFILE_UPDATE',
+          'CREW_VIEW',
+          'CREW_INVITE',
+          'CREW_UPDATE',
+          'CREW_REMOVE',
+          'CREATIVE_GENERATE',
+          'CREATIVE_EDIT',
+          'CREATIVE_DOWNLOAD',
+          'CREATIVE_SUBMIT',
+          'SESSION_MANAGE',
+        ],
+        workspaceId: 'workspace-lebhas-business-attire',
+        workspaceName: 'Lebhas - Business Attire',
+        workspace: {
+          id: 'workspace-lebhas-business-attire',
+          name: 'Lebhas - Business Attire',
+        },
+      },
+    };
   }
 }

@@ -4,6 +4,6 @@ export const DASHBOARD_ROUTES: Routes = [
   {
     path: '',
     loadComponent: () =>
-      import('./dashboard-home/dashboard-home.component').then((m) => m.DashboardHomeComponent),
+      import('./dashboard-home/dashboard-home').then((m) => m.DashboardHomeComponent),
   },
 ];

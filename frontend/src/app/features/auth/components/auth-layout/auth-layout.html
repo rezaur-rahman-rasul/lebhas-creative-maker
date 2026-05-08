@@ -1,0 +1,27 @@
+<div class="min-h-screen bg-[#f2f4f7]">
+  <div class="mx-auto flex min-h-screen max-w-[1520px] flex-col lg:flex-row">
+    <section class="hidden lg:flex lg:w-[56%] lg:p-6 xl:p-8">
+      <app-creative-preview-hero />
+    </section>
+
+    <section class="flex min-h-screen flex-1 flex-col px-4 py-5 sm:px-6 lg:w-[44%] lg:px-10 lg:py-8 xl:px-12">
+      <div class="rounded-[1.75rem] border border-white/80 bg-white/80 p-5 shadow-[0_24px_70px_rgba(15,23,42,0.08)] backdrop-blur lg:hidden">
+        <p class="text-xs font-semibold uppercase tracking-[0.18em] text-brand-700">Lebhas - Business Attire</p>
+        <h1 class="mt-3 text-2xl font-semibold leading-tight text-ink">
+          Create the ads your <span class="text-brand-600">customers love.</span>
+        </h1>
+        <p class="mt-2 text-sm leading-6 text-slate-600">
+          Turn product shots into campaign-ready creative across every major ad channel.
+        </p>
+      </div>
+
+      <div class="flex flex-1 items-center justify-center py-8 lg:py-0">
+        <div class="w-full max-w-[34rem]">
+          <ng-content />
+        </div>
+      </div>
+
+      <app-auth-footer />
+    </section>
+  </div>
+</div>

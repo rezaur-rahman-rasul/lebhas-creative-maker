@@ -2,6 +2,7 @@ package com.lebhas.creativesaas.identity.application;
 
 import com.lebhas.creativesaas.common.exception.BusinessException;
 import com.lebhas.creativesaas.common.exception.ErrorCode;
+import com.lebhas.creativesaas.common.security.Permission;
 import com.lebhas.creativesaas.common.security.Role;
 import com.lebhas.creativesaas.common.security.SecurityAuditLogger;
 import com.lebhas.creativesaas.common.security.authorization.RolePermissionRegistry;
@@ -22,6 +23,9 @@ import com.lebhas.creativesaas.identity.domain.WorkspaceMembershipEntity;
 import com.lebhas.creativesaas.identity.domain.WorkspaceMembershipStatus;
 import com.lebhas.creativesaas.identity.infrastructure.persistence.UserRepository;
 import com.lebhas.creativesaas.identity.infrastructure.persistence.WorkspaceMembershipRepository;
+import com.lebhas.creativesaas.workspace.application.WorkspacePermissionPolicy;
+import com.lebhas.creativesaas.workspace.application.WorkspaceProvisioningService;
+import com.lebhas.creativesaas.workspace.domain.WorkspaceLanguage;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.DisabledException;
@@ -51,6 +55,8 @@ public class AuthenticationService {
     private final WorkspaceAuthorizationService workspaceAuthorizationService;
     private final IdentityViewMapper identityViewMapper;
     private final RolePermissionRegistry rolePermissionRegistry;
+    private final WorkspacePermissionPolicy workspacePermissionPolicy;
+    private final WorkspaceProvisioningService workspaceProvisioningService;
     private final AccessTokenRevocationStore accessTokenRevocationStore;
     private final SecurityAuditLogger securityAuditLogger;
     private final Clock clock;
@@ -67,6 +73,8 @@ public class AuthenticationService {
             WorkspaceAuthorizationService workspaceAuthorizationService,
             IdentityViewMapper identityViewMapper,
             RolePermissionRegistry rolePermissionRegistry,
+            WorkspacePermissionPolicy workspacePermissionPolicy,
+            WorkspaceProvisioningService workspaceProvisioningService,
             AccessTokenRevocationStore accessTokenRevocationStore,
             SecurityAuditLogger securityAuditLogger,
             Clock clock
@@ -82,6 +90,8 @@ public class AuthenticationService {
         this.workspaceAuthorizationService = workspaceAuthorizationService;
         this.identityViewMapper = identityViewMapper;
         this.rolePermissionRegistry = rolePermissionRegistry;
+        this.workspacePermissionPolicy = workspacePermissionPolicy;
+        this.workspaceProvisioningService = workspaceProvisioningService;
         this.accessTokenRevocationStore = accessTokenRevocationStore;
         this.securityAuditLogger = securityAuditLogger;
         this.clock = clock;
@@ -106,23 +116,31 @@ public class AuthenticationService {
                     workspaceId,
                     invitedUser.getId(),
                     role,
-                    WorkspaceMembershipStatus.ACTIVE));
+                    WorkspaceMembershipStatus.ACTIVE,
+                    pendingInvitation.invitation().getPermissions(),
+                    clock.instant(),
+                    pendingInvitation.invitation().getInvitedByUserId()));
             invitedUser.markLastLogin(clock.instant());
             userRepository.save(invitedUser);
             invitationService.markAccepted(pendingInvitation.invitation());
             return issueSession(invitedUser, workspaceId, role, clientIp, userAgent);
         }
 
-        if (workspaceId == null) {
-            workspaceId = UUID.randomUUID();
-        }
         UserEntity user = createUser(command, normalizedEmail, role);
         userRepository.save(user);
-        workspaceMembershipRepository.save(WorkspaceMembershipEntity.create(
-                workspaceId,
+        WorkspaceProvisioningService.ProvisionedWorkspace provisionedWorkspace = workspaceProvisioningService.provisionOwnedWorkspace(
                 user.getId(),
-                role,
-                WorkspaceMembershipStatus.ACTIVE));
+                new WorkspaceProvisioningService.WorkspaceSeed(
+                        defaultWorkspaceName(command.firstName(), command.lastName()),
+                        null,
+                        null,
+                        null,
+                        null,
+                        "Asia/Dhaka",
+                        WorkspaceLanguage.ENGLISH,
+                        "BDT",
+                        "BD"));
+        workspaceId = provisionedWorkspace.workspace().getId();
         user.markLastLogin(clock.instant());
         userRepository.save(user);
         return issueSession(user, workspaceId, role, clientIp, userAgent);
@@ -209,7 +227,7 @@ public class AuthenticationService {
         UserEntity user = userRepository.findByIdAndDeletedFalse(currentUser.userId())
                 .orElseThrow(() -> new BusinessException(ErrorCode.RESOURCE_NOT_FOUND));
         Role role = currentUser.roles().stream().findFirst().orElse(user.getRole());
-        return toUserView(user, currentUser.workspaceId(), role);
+        return identityViewMapper.toUserView(user, currentUser.workspaceId(), role, currentUser.permissions());
     }
 
     private UserEntity createUser(RegisterUserCommand command, String normalizedEmail, Role role) {
@@ -254,14 +272,24 @@ public class AuthenticationService {
     }
 
     private UserView toUserView(UserEntity user, UUID workspaceId, Role role) {
+        java.util.Set<Permission> permissions = workspaceId == null
+                ? rolePermissionRegistry.resolve(Set.of(role))
+                : workspaceAuthorizationService.resolveEffectivePermissions(user.getId(), role, workspaceId);
         return identityViewMapper.toUserView(
                 user,
                 workspaceId,
                 role,
-                rolePermissionRegistry.resolve(Set.of(role)));
+                permissions);
     }
 
     private String normalizeEmail(String email) {
         return email.trim().toLowerCase(Locale.ROOT);
+    }
+
+    private String defaultWorkspaceName(String firstName, String lastName) {
+        String normalizedFirstName = firstName == null ? "" : firstName.trim();
+        String normalizedLastName = lastName == null ? "" : lastName.trim();
+        String fullName = (normalizedFirstName + " " + normalizedLastName).trim();
+        return fullName.isBlank() ? "Workspace" : fullName + " Workspace";
     }
 }

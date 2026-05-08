@@ -1,53 +1,40 @@
 import { Routes } from '@angular/router';
 
-import { RoleSectionPageComponent } from '@app/features/shared/role-section-page/role-section-page.component';
+import { RoleSectionPageComponent } from '@app/features/shared/role-section-page/role-section-page';
 
 export const ADMIN_ROUTES: Routes = [
   {
     path: '',
-    loadComponent: () => import('./admin-home.component').then((m) => m.AdminHomeComponent),
+    loadComponent: () =>
+      import('./workspace/pages/workspace-dashboard/workspace-dashboard-page').then(
+        (m) => m.WorkspaceDashboardPageComponent,
+      ),
   },
   {
     path: 'team',
-    component: RoleSectionPageComponent,
-    data: {
-      section: {
-        eyebrow: 'Workspace',
-        title: 'Team',
-        description: 'Team access, invitations, and role visibility sit behind the admin boundary.',
-        badgeLabel: 'ADMIN',
-        badgeTone: 'brand',
-        emptyIcon: 'users',
-        emptyTitle: 'Team management foundation',
-        emptyDescription: 'Invitation and user-management workflows can expand from this route.',
-        highlights: [
-          { title: 'Crew invitations', description: 'Invite acceptance flow is already wired into auth.' },
-          { title: 'RBAC visibility', description: 'Admin and crew navigation stays scoped to workspace access.' },
-          { title: 'Session awareness', description: 'Current user state is tracked with signals and refresh support.' },
-        ],
-      },
-    },
+    pathMatch: 'full',
+    redirectTo: 'crew',
+  },
+  {
+    path: 'settings',
+    loadComponent: () =>
+      import('./workspace/pages/workspace-settings/workspace-settings-page').then(
+        (m) => m.WorkspaceSettingsPageComponent,
+      ),
+  },
+  {
+    path: 'crew',
+    loadComponent: () =>
+      import('./workspace/pages/crew-management/crew-management-page').then(
+        (m) => m.CrewManagementPageComponent,
+      ),
   },
   {
     path: 'brand-profile',
-    component: RoleSectionPageComponent,
-    data: {
-      section: {
-        eyebrow: 'Workspace',
-        title: 'Brand Profile',
-        description: 'Brand context will plug into the authenticated workspace shell here later.',
-        badgeLabel: 'ADMIN',
-        badgeTone: 'brand',
-        emptyIcon: 'badge-check',
-        emptyTitle: 'Brand profile placeholder',
-        emptyDescription: 'Brand setup stays intentionally outside the Day 2 auth scope.',
-        highlights: [
-          { title: 'Workspace identity', description: 'Tenant headers already travel with protected API calls.' },
-          { title: 'Scoped access', description: 'Admin users remain locked to their active workspace.' },
-          { title: 'Future readiness', description: 'This route is ready for future business domain UI.' },
-        ],
-      },
-    },
+    loadComponent: () =>
+      import('./workspace/pages/brand-profile/brand-profile-page').then(
+        (m) => m.BrandProfilePageComponent,
+      ),
   },
   {
     path: 'assets',

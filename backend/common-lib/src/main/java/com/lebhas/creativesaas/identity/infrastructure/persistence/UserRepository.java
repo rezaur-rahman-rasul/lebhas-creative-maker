@@ -18,6 +18,8 @@ public interface UserRepository extends JpaRepository<UserEntity, UUID> {
 
     boolean existsByEmailIgnoreCaseAndDeletedFalse(String email);
 
+    List<UserEntity> findAllByIdInAndDeletedFalse(Iterable<UUID> ids);
+
     @Query("""
             select distinct u
             from UserEntity u

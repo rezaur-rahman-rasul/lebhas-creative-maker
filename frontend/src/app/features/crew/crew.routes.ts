@@ -1,11 +1,11 @@
 import { Routes } from '@angular/router';
 
-import { RoleSectionPageComponent } from '@app/features/shared/role-section-page/role-section-page.component';
+import { RoleSectionPageComponent } from '@app/features/shared/role-section-page/role-section-page';
 
 export const CREW_ROUTES: Routes = [
   {
     path: '',
-    loadComponent: () => import('./crew-home.component').then((m) => m.CrewHomeComponent),
+    loadComponent: () => import('./crew-home').then((m) => m.CrewHomeComponent),
   },
   {
     path: 'generate-creative',

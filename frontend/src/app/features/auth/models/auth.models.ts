@@ -32,6 +32,14 @@ export interface AuthSessionResponse {
   readonly user: CurrentUserResponse;
 }
 
+export interface RememberedProfile {
+  readonly id: string;
+  readonly name: string;
+  readonly avatarUrl: string;
+  readonly email: string;
+  readonly hasSavedPassword: boolean;
+}
+
 export type LoginResponse = AuthSessionResponse;
 export type RegisterResponse = AuthSessionResponse;
 export type RefreshTokenResponse = AuthSessionResponse;

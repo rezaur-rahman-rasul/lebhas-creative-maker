@@ -2,6 +2,7 @@ package com.lebhas.creativesaas.identity.application;
 
 import com.lebhas.creativesaas.common.exception.BusinessException;
 import com.lebhas.creativesaas.common.exception.ErrorCode;
+import com.lebhas.creativesaas.common.security.Permission;
 import com.lebhas.creativesaas.common.security.Role;
 import com.lebhas.creativesaas.common.security.context.CurrentUserContext;
 import com.lebhas.creativesaas.common.security.jwt.JwtProperties;
@@ -12,12 +13,14 @@ import com.lebhas.creativesaas.identity.domain.InvitationEntity;
 import com.lebhas.creativesaas.identity.domain.InvitationStatus;
 import com.lebhas.creativesaas.identity.infrastructure.persistence.InvitationRepository;
 import com.lebhas.creativesaas.identity.infrastructure.persistence.UserRepository;
+import com.lebhas.creativesaas.workspace.application.WorkspacePermissionPolicy;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Clock;
 import java.time.Instant;
 import java.util.Locale;
+import java.util.Set;
 
 @Service
 public class InvitationService {
@@ -28,6 +31,7 @@ public class InvitationService {
     private final CurrentUserContext currentUserContext;
     private final OpaqueTokenService opaqueTokenService;
     private final JwtProperties jwtProperties;
+    private final WorkspacePermissionPolicy workspacePermissionPolicy;
     private final Clock clock;
 
     public InvitationService(
@@ -37,6 +41,7 @@ public class InvitationService {
             CurrentUserContext currentUserContext,
             OpaqueTokenService opaqueTokenService,
             JwtProperties jwtProperties,
+            WorkspacePermissionPolicy workspacePermissionPolicy,
             Clock clock
     ) {
         this.invitationRepository = invitationRepository;
@@ -45,6 +50,7 @@ public class InvitationService {
         this.currentUserContext = currentUserContext;
         this.opaqueTokenService = opaqueTokenService;
         this.jwtProperties = jwtProperties;
+        this.workspacePermissionPolicy = workspacePermissionPolicy;
         this.clock = clock;
     }
 
@@ -53,12 +59,13 @@ public class InvitationService {
         if (command.role() != Role.CREW) {
             throw new BusinessException(ErrorCode.BUSINESS_RULE_VIOLATION, "Only crew invitations are supported in this foundation");
         }
+        Set<Permission> permissions = workspacePermissionPolicy.normalizeCrewPermissions(command.permissions());
         String email = normalizeEmail(command.email());
         if (userRepository.existsByEmailIgnoreCaseAndDeletedFalse(email)) {
             throw new BusinessException(ErrorCode.EMAIL_ALREADY_EXISTS);
         }
         var currentUser = currentUserContext.requireCurrentUser();
-        var workspaceId = workspaceAuthorizationService.requireWorkspaceAccess(command.workspaceId());
+        var workspaceId = workspaceAuthorizationService.requirePermission(command.workspaceId(), Permission.CREW_INVITE).workspace().getId();
         OpaqueTokenService.IssuedOpaqueToken token = opaqueTokenService.issue();
         Instant expiresAt = clock.instant().plus(jwtProperties.getInvitationTokenTtl());
         InvitationEntity invitation = invitationRepository.save(InvitationEntity.create(
@@ -68,8 +75,16 @@ public class InvitationService {
                 command.role(),
                 currentUser.userId(),
                 token.hashedSecret(),
-                expiresAt));
-        return new InvitationView(token.value(), workspaceId, invitation.getEmail(), invitation.getRole(), expiresAt, InvitationStatus.PENDING);
+                expiresAt,
+                permissions));
+        return new InvitationView(
+                token.value(),
+                workspaceId,
+                invitation.getEmail(),
+                invitation.getRole(),
+                invitation.getPermissions(),
+                expiresAt,
+                InvitationStatus.PENDING);
     }
 
     @Transactional(readOnly = true)

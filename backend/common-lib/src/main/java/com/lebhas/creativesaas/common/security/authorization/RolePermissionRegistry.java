@@ -22,18 +22,32 @@ public class RolePermissionRegistry {
                 Permission.USER_CREATE,
                 Permission.USER_UPDATE,
                 Permission.USER_STATUS_UPDATE,
+                Permission.WORKSPACE_CREATE,
+                Permission.WORKSPACE_VIEW,
+                Permission.WORKSPACE_UPDATE,
+                Permission.WORKSPACE_STATUS_UPDATE,
+                Permission.WORKSPACE_SETTINGS_VIEW,
+                Permission.WORKSPACE_SETTINGS_UPDATE,
+                Permission.BRAND_PROFILE_UPDATE,
+                Permission.CREW_VIEW,
                 Permission.CREW_INVITE,
-                Permission.WORKSPACE_VIEW,
                 Permission.CREATIVE_GENERATE,
+                Permission.CREW_UPDATE,
+                Permission.CREW_REMOVE,
+                Permission.CREATIVE_EDIT,
+                Permission.CREATIVE_DOWNLOAD,
+                Permission.CREATIVE_SUBMIT,
                 Permission.SESSION_MANAGE));
-        permissionsByRole.put(Role.CREW, EnumSet.of(
-                Permission.WORKSPACE_VIEW,
-                Permission.CREATIVE_GENERATE));
+        permissionsByRole.put(Role.CREW, EnumSet.noneOf(Permission.class));
     }
 
     public Set<Permission> resolve(Set<Role> roles) {
         EnumSet<Permission> resolved = EnumSet.noneOf(Permission.class);
         roles.forEach(role -> resolved.addAll(permissionsByRole.getOrDefault(role, Set.of())));
         return Set.copyOf(resolved);
+    }
+
+    public Set<Permission> resolve(Role role) {
+        return Set.copyOf(permissionsByRole.getOrDefault(role, Set.of()));
     }
 }

@@ -1,11 +1,11 @@
 import { Routes } from '@angular/router';
 
-import { RoleSectionPageComponent } from '@app/features/shared/role-section-page/role-section-page.component';
+import { RoleSectionPageComponent } from '@app/features/shared/role-section-page/role-section-page';
 
 export const MASTER_ROUTES: Routes = [
   {
     path: '',
-    loadComponent: () => import('./master-home.component').then((m) => m.MasterHomeComponent),
+    loadComponent: () => import('./master-home').then((m) => m.MasterHomeComponent),
   },
   {
     path: 'clients',

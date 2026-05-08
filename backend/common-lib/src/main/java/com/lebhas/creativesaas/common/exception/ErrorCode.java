@@ -20,6 +20,11 @@ public enum ErrorCode {
     INVITATION_INVALID("AUTH-400-01", "Invitation is invalid", HttpStatus.BAD_REQUEST),
     EMAIL_ALREADY_EXISTS("USER-409-01", "Email is already registered", HttpStatus.CONFLICT),
     USER_INACTIVE("USER-403-01", "User account is not active", HttpStatus.FORBIDDEN),
+    WORKSPACE_NOT_FOUND("WORKSPACE-404-01", "Workspace not found", HttpStatus.NOT_FOUND),
+    WORKSPACE_SLUG_ALREADY_EXISTS("WORKSPACE-409-01", "Workspace slug is already in use", HttpStatus.CONFLICT),
+    WORKSPACE_MEMBER_NOT_FOUND("WORKSPACE-404-02", "Workspace member not found", HttpStatus.NOT_FOUND),
+    WORKSPACE_OWNER_REQUIRED("WORKSPACE-403-01", "Workspace owner access is required", HttpStatus.FORBIDDEN),
+    WORKSPACE_PERMISSION_INVALID("WORKSPACE-400-01", "Workspace permission assignment is invalid", HttpStatus.BAD_REQUEST),
     INTERNAL_ERROR("COMMON-500", "Unexpected server error", HttpStatus.INTERNAL_SERVER_ERROR);
 
     private final String code;

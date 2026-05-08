@@ -1,0 +1,49 @@
+<section class="relative">
+  @if (showRememberedProfiles()) {
+    <app-remembered-profiles
+      [profiles]="rememberedProfiles()"
+      [loading]="authLoading()"
+      (profileSelected)="selectProfile($event)"
+      (useAnotherProfile)="showManualLogin()"
+      (manageProfiles)="openRemoveProfilesDialog()"
+    />
+  } @else {
+    <div class="space-y-4">
+      @if (hasRememberedProfiles()) {
+        <button
+          type="button"
+          class="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-600 shadow-sm transition hover:border-slate-300 hover:text-slate-800"
+          (click)="showSavedProfiles()"
+        >
+          <app-icon name="users" [size]="16" />
+          View saved profiles
+        </button>
+      }
+
+      <app-login-form
+        [loading]="authLoading()"
+        [errorMessage]="loginFormError()"
+        [fieldErrors]="loginFieldErrors()"
+        (submitted)="submitLoginForm($event)"
+        (forgotPassword)="showForgotPasswordHelp()"
+      />
+    </div>
+  }
+
+  <app-remembered-password-dialog
+    [open]="showPasswordDialog()"
+    [profile]="selectedProfile()"
+    [loading]="authLoading()"
+    [errorMessage]="passwordDialogError()"
+    (closed)="closePasswordDialog()"
+    (forgotPassword)="showForgotPasswordHelp()"
+    (submitted)="submitRememberedPassword($event)"
+  />
+
+  <app-remove-profiles-dialog
+    [open]="showRemoveProfilesDialog()"
+    [profiles]="rememberedProfiles()"
+    (closed)="closeRemoveProfilesDialog()"
+    (removed)="removeRememberedProfile($event)"
+  />
+</section>

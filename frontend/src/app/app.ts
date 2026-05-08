@@ -2,13 +2,14 @@ import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
 
 import { AuthFacade } from './features/auth/services/auth.facade';
-import { ToastComponent } from './shared/components/toast/toast.component';
+import { ToastComponent } from './shared/components/toast/toast';
 
 @Component({
   selector: 'app-root',
+  standalone: true,
   imports: [RouterOutlet, ToastComponent],
   templateUrl: './app.html',
-  styleUrl: './app.css',
+  styleUrl: './app.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class App {

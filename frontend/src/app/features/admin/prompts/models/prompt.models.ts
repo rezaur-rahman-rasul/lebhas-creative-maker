@@ -399,7 +399,7 @@ export function buildPromptSuggestionSections(
     return [];
   }
 
-  return [
+  const sections: readonly PromptSuggestionSection[] = [
     {
       key: 'CTA_SUGGESTIONS',
       title: 'CTA suggestions',
@@ -430,7 +430,9 @@ export function buildPromptSuggestionSections(
       title: 'Business category suggestions',
       suggestions: suggestions.businessCategorySuggestions,
     },
-  ].filter((section) => section.suggestions.length > 0);
+  ];
+
+  return sections.filter((section) => section.suggestions.length > 0);
 }
 
 export function normalizePromptText(value: string): string {

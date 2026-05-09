@@ -27,7 +27,7 @@
           <option value="">Start from a custom prompt</option>
           @for (template of templates(); track template.id) {
             <option [value]="template.id">
-              {{ template.name }} · {{ template.platform }} · {{ template.language }}
+              {{ template.name }} - {{ template.platform }} - {{ template.language }}
             </option>
           }
         </select>
@@ -75,6 +75,9 @@
         @if (editorForm().get('platform')?.touched && editorForm().get('platform')?.hasError('required')) {
           <p class="text-sm text-red-600">Platform is required.</p>
         }
+        @if (editorForm().get('platform')?.touched && editorForm().get('platform')?.hasError('unsupportedSelection')) {
+          <p class="text-sm text-red-600">Select a supported platform.</p>
+        }
       </div>
 
       <div class="space-y-2">
@@ -92,6 +95,9 @@
         @if (editorForm().get('campaignObjective')?.touched && editorForm().get('campaignObjective')?.hasError('required')) {
           <p class="text-sm text-red-600">Campaign objective is required.</p>
         }
+        @if (editorForm().get('campaignObjective')?.touched && editorForm().get('campaignObjective')?.hasError('unsupportedSelection')) {
+          <p class="text-sm text-red-600">Select a supported campaign objective.</p>
+        }
       </div>
 
       <div class="space-y-2">
@@ -108,6 +114,9 @@
         </select>
         @if (editorForm().get('language')?.touched && editorForm().get('language')?.hasError('required')) {
           <p class="text-sm text-red-600">Language is required.</p>
+        }
+        @if (editorForm().get('language')?.touched && editorForm().get('language')?.hasError('unsupportedSelection')) {
+          <p class="text-sm text-red-600">Select a supported language.</p>
         }
       </div>
 

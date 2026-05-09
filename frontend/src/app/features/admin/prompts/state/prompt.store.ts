@@ -495,7 +495,7 @@ export class PromptStore {
 
   private mergeSuggestionList(response: PromptSuggestionListResponse): void {
     const current = this.suggestionsSignal() ?? EMPTY_PROMPT_SUGGESTIONS;
-    const next: PromptSuggestionsResponse = {
+    const base: PromptSuggestionsResponse = {
       ...current,
       reasoningSummary: response.reasoningSummary,
       aiProvider: response.aiProvider,
@@ -503,26 +503,28 @@ export class PromptStore {
       tokenUsage: response.tokenUsage,
     };
 
+    let next: PromptSuggestionsResponse;
     switch (response.suggestionType) {
       case 'CTA_SUGGESTIONS':
-        next.ctaSuggestions = response.suggestions;
+        next = { ...base, ctaSuggestions: response.suggestions };
         break;
       case 'HEADLINE_SUGGESTIONS':
-        next.headlineSuggestions = response.suggestions;
+        next = { ...base, headlineSuggestions: response.suggestions };
         break;
       case 'OFFER_SUGGESTIONS':
-        next.offerSuggestions = response.suggestions;
+        next = { ...base, offerSuggestions: response.suggestions };
         break;
       case 'CREATIVE_ANGLE_SUGGESTIONS':
-        next.creativeAngleSuggestions = response.suggestions;
+        next = { ...base, creativeAngleSuggestions: response.suggestions };
         break;
       case 'CAMPAIGN_TONE_SUGGESTIONS':
-        next.campaignToneSuggestions = response.suggestions;
+        next = { ...base, campaignToneSuggestions: response.suggestions };
         break;
       case 'BUSINESS_CATEGORY_SUGGESTIONS':
-        next.businessCategorySuggestions = response.suggestions;
+        next = { ...base, businessCategorySuggestions: response.suggestions };
         break;
       default:
+        next = base;
         break;
     }
 

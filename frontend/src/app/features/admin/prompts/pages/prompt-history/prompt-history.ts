@@ -1,4 +1,4 @@
-import { DatePipe, KeyValuePipe } from '@angular/common';
+import { KeyValuePipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule } from '@angular/forms';
 
@@ -9,12 +9,16 @@ import { ModalShellComponent } from '@app/shared/components/modal-shell/modal-sh
 import { PageHeaderComponent } from '@app/shared/components/page-header/page-header';
 import {
   CAMPAIGN_OBJECTIVE_OPTIONS,
+  CampaignObjective,
   DEFAULT_PROMPT_HISTORY_FILTERS,
   PLATFORM_OPTIONS,
   PROMPT_HISTORY_STATUS_OPTIONS,
   PROMPT_SUGGESTION_TYPE_OPTIONS,
   PromptHistory,
+  PromptHistoryStatus,
   PromptHistoryFilter,
+  PromptPlatform,
+  SuggestionType,
   suggestionTypeLabel,
 } from '../../models/prompt.models';
 import { PromptStore } from '../../state/prompt.store';
@@ -24,7 +28,6 @@ import { PromptHistoryList } from '../../components/prompt-history-list/prompt-h
   selector: 'app-prompt-history-page',
   standalone: true,
   imports: [
-    DatePipe,
     KeyValuePipe,
     ReactiveFormsModule,
     BadgeComponent,
@@ -42,10 +45,10 @@ export class PromptHistoryPage {
   protected readonly store = inject(PromptStore);
 
   protected readonly filterForm = new FormGroup({
-    platform: new FormControl('', { nonNullable: true }),
-    campaignObjective: new FormControl('', { nonNullable: true }),
-    suggestionType: new FormControl('', { nonNullable: true }),
-    status: new FormControl('', { nonNullable: true }),
+    platform: new FormControl<PromptPlatform | ''>('', { nonNullable: true }),
+    campaignObjective: new FormControl<CampaignObjective | ''>('', { nonNullable: true }),
+    suggestionType: new FormControl<SuggestionType | ''>('', { nonNullable: true }),
+    status: new FormControl<PromptHistoryStatus | ''>('', { nonNullable: true }),
   });
 
   protected readonly platformOptions = PLATFORM_OPTIONS;

@@ -8,9 +8,13 @@ import {
   PROMPT_LANGUAGE_OPTIONS,
   PROMPT_TEMPLATE_NAME_MAX_LENGTH,
   PROMPT_TEMPLATE_STATUS_OPTIONS,
+  PromptLanguage,
+  PromptPlatform,
   PromptTemplate,
   PromptTemplatePayload,
+  PromptTemplateStatus,
 } from '../../models/prompt.models';
+import { supportedPromptOptionValidator } from '../../prompt-form.validators';
 
 @Component({
   selector: 'app-prompt-template-form',
@@ -38,16 +42,31 @@ export class PromptTemplateForm {
       validators: [Validators.required, Validators.maxLength(PROMPT_TEMPLATE_NAME_MAX_LENGTH)],
     }),
     description: new FormControl('', { nonNullable: true, validators: [Validators.maxLength(500)] }),
-    platform: new FormControl('', { nonNullable: true, validators: [Validators.required] }),
-    campaignObjective: new FormControl('', { nonNullable: true, validators: [Validators.required] }),
+    platform: new FormControl<PromptPlatform | ''>('', {
+      nonNullable: true,
+      validators: [Validators.required, supportedPromptOptionValidator(PLATFORM_OPTIONS)],
+    }),
+    campaignObjective: new FormControl<PromptTemplatePayload['campaignObjective'] | ''>('', {
+      nonNullable: true,
+      validators: [
+        Validators.required,
+        supportedPromptOptionValidator(CAMPAIGN_OBJECTIVE_OPTIONS),
+      ],
+    }),
     businessType: new FormControl('', { nonNullable: true, validators: [Validators.maxLength(80)] }),
-    language: new FormControl('', { nonNullable: true, validators: [Validators.required] }),
+    language: new FormControl<PromptLanguage | ''>('', {
+      nonNullable: true,
+      validators: [Validators.required, supportedPromptOptionValidator(PROMPT_LANGUAGE_OPTIONS)],
+    }),
     templateText: new FormControl('', {
       nonNullable: true,
       validators: [Validators.required, Validators.minLength(5), Validators.maxLength(5000)],
     }),
     isSystemDefault: new FormControl(false, { nonNullable: true }),
-    status: new FormControl<'ACTIVE' | 'INACTIVE'>('ACTIVE', { nonNullable: true }),
+    status: new FormControl<PromptTemplateStatus>('ACTIVE', {
+      nonNullable: true,
+      validators: [supportedPromptOptionValidator(PROMPT_TEMPLATE_STATUS_OPTIONS)],
+    }),
   });
 
   constructor() {

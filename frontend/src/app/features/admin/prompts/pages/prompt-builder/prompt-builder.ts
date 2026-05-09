@@ -11,10 +11,21 @@ import { EmptyStateComponent } from '@app/shared/components/empty-state/empty-st
 import { PageHeaderComponent } from '@app/shared/components/page-header/page-header';
 import {
   buildPromptSuggestionSections,
+  CampaignObjective,
+  CAMPAIGN_OBJECTIVE_OPTIONS,
+  CreativeStyle,
+  CREATIVE_STYLE_OPTIONS,
   PromptEnhanceRequest,
+  PromptLanguage,
+  PromptPlatform,
+  PLATFORM_OPTIONS,
+  PROMPT_LANGUAGE_OPTIONS,
   PromptSuggestionsRequest,
+  PromptTone,
+  PROMPT_TONE_OPTIONS,
   SuggestionType,
 } from '../../models/prompt.models';
+import { supportedPromptOptionValidator } from '../../prompt-form.validators';
 import { PromptStore } from '../../state/prompt.store';
 import { AssetContextPicker } from '../../components/asset-context-picker/asset-context-picker';
 import { BrandContextCard } from '../../components/brand-context-card/brand-context-card';
@@ -53,15 +64,30 @@ export class PromptBuilderPage {
       nonNullable: true,
       validators: [Validators.required, Validators.minLength(5), Validators.maxLength(5000)],
     }),
-    platform: new FormControl('', { nonNullable: true, validators: [Validators.required] }),
-    campaignObjective: new FormControl('', {
+    platform: new FormControl<PromptPlatform | ''>('', {
       nonNullable: true,
-      validators: [Validators.required],
+      validators: [Validators.required, supportedPromptOptionValidator(PLATFORM_OPTIONS)],
+    }),
+    campaignObjective: new FormControl<CampaignObjective | ''>('', {
+      nonNullable: true,
+      validators: [
+        Validators.required,
+        supportedPromptOptionValidator(CAMPAIGN_OBJECTIVE_OPTIONS),
+      ],
     }),
     businessType: new FormControl('', { nonNullable: true, validators: [Validators.maxLength(80)] }),
-    creativeStyle: new FormControl('', { nonNullable: true }),
-    language: new FormControl('ENGLISH', { nonNullable: true, validators: [Validators.required] }),
-    tone: new FormControl('', { nonNullable: true }),
+    creativeStyle: new FormControl<CreativeStyle | ''>('', {
+      nonNullable: true,
+      validators: [supportedPromptOptionValidator(CREATIVE_STYLE_OPTIONS)],
+    }),
+    language: new FormControl<PromptLanguage | ''>('ENGLISH', {
+      nonNullable: true,
+      validators: [Validators.required, supportedPromptOptionValidator(PROMPT_LANGUAGE_OPTIONS)],
+    }),
+    tone: new FormControl<PromptTone | ''>('', {
+      nonNullable: true,
+      validators: [supportedPromptOptionValidator(PROMPT_TONE_OPTIONS)],
+    }),
     targetAudience: new FormControl('', { nonNullable: true, validators: [Validators.maxLength(160)] }),
     offerDetails: new FormControl('', { nonNullable: true, validators: [Validators.maxLength(600)] }),
     ctaPreference: new FormControl('', { nonNullable: true, validators: [Validators.maxLength(120)] }),
@@ -219,7 +245,7 @@ export class PromptBuilderPage {
   protected saveSuggestionSelection(text: string): void {
     this.notifications.info(
       'Selection saved',
-      `Saved foundation for later template work: ${text.slice(0, 72)}${text.length > 72 ? '…' : ''}`,
+      `Saved foundation for later template work: ${text.slice(0, 72)}${text.length > 72 ? '...' : ''}`,
     );
   }
 

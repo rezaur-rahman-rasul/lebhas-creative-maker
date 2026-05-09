@@ -41,6 +41,7 @@ export class ProtectedLayoutComponent {
     { label: 'Workspaces', icon: 'building-2', route: '/master' },
     { label: 'Workspace', icon: 'building-2', route: '/admin' },
     { label: 'Prompts', icon: 'wand-sparkles', route: '/admin/prompts' },
+    { label: 'Generate', icon: 'sparkles', route: '/admin/creative-generation' },
     { label: 'Assets', icon: 'image', route: '/admin/assets' },
     { label: 'Settings', icon: 'settings', route: '/admin/settings' },
     { label: 'Brand Profile', icon: 'badge-check', route: '/admin/brand-profile' },
@@ -51,6 +52,7 @@ export class ProtectedLayoutComponent {
     { label: 'Dashboard', icon: 'layout-dashboard', route: '/dashboard' },
     { label: 'Workspace', icon: 'building-2', route: '/admin' },
     { label: 'Prompts', icon: 'wand-sparkles', route: '/admin/prompts' },
+    { label: 'Generate', icon: 'sparkles', route: '/admin/creative-generation' },
     { label: 'Assets', icon: 'image', route: '/admin/assets' },
     { label: 'Settings', icon: 'settings', route: '/admin/settings' },
     { label: 'Brand Profile', icon: 'badge-check', route: '/admin/brand-profile' },
@@ -61,6 +63,7 @@ export class ProtectedLayoutComponent {
     { label: 'Dashboard', icon: 'layout-dashboard', route: '/dashboard' },
     { label: 'Workspace', icon: 'building-2', route: '/crew' },
     { label: 'Prompts', icon: 'wand-sparkles', route: '/crew/prompts' },
+    { label: 'Generate', icon: 'sparkles', route: '/crew/creative-generation' },
     { label: 'Assets', icon: 'image', route: '/crew/assets' },
   ];
 
@@ -80,6 +83,10 @@ export class ProtectedLayoutComponent {
             return hasPromptAccess(permissions);
           }
 
+          if (item.route === '/admin/creative-generation') {
+            return permissions.includes('CREATIVE_GENERATE');
+          }
+
           return true;
         });
       case 'CREW':
@@ -90,6 +97,10 @@ export class ProtectedLayoutComponent {
 
           if (item.route === '/crew/prompts') {
             return permissions.includes('PROMPT_INTELLIGENCE_USE');
+          }
+
+          if (item.route === '/crew/creative-generation') {
+            return permissions.includes('CREATIVE_GENERATE');
           }
 
           return true;

@@ -45,6 +45,13 @@ export const ADMIN_ROUTES: Routes = [
     loadChildren: () => import('./prompts/prompts.routes').then((m) => m.PROMPT_ROUTES),
   },
   {
+    path: 'creative-generation',
+    loadChildren: () =>
+      import('./creative-generation/creative-generation.routes').then(
+        (m) => m.CREATIVE_GENERATION_ROUTES,
+      ),
+  },
+  {
     path: 'creatives',
     component: RoleSectionPageComponent,
     data: {

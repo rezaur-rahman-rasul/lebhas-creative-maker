@@ -19,6 +19,13 @@ export const CREW_ROUTES: Routes = [
       ),
   },
   {
+    path: 'creative-generation',
+    loadChildren: () =>
+      import('../admin/creative-generation/creative-generation.routes').then(
+        (m) => m.CREATIVE_GENERATION_ROUTES,
+      ),
+  },
+  {
     path: 'generate-creative',
     component: RoleSectionPageComponent,
     data: {

@@ -43,6 +43,9 @@
       @if (form.get('platform')?.touched && form.get('platform')?.hasError('required')) {
         <p class="text-sm text-red-600">Platform is required.</p>
       }
+      @if (form.get('platform')?.touched && form.get('platform')?.hasError('unsupportedSelection')) {
+        <p class="text-sm text-red-600">Select a supported platform.</p>
+      }
     </div>
 
     <div class="space-y-2">
@@ -59,6 +62,9 @@
       </select>
       @if (form.get('campaignObjective')?.touched && form.get('campaignObjective')?.hasError('required')) {
         <p class="text-sm text-red-600">Campaign objective is required.</p>
+      }
+      @if (form.get('campaignObjective')?.touched && form.get('campaignObjective')?.hasError('unsupportedSelection')) {
+        <p class="text-sm text-red-600">Select a supported campaign objective.</p>
       }
     </div>
 
@@ -87,6 +93,9 @@
       </select>
       @if (form.get('language')?.touched && form.get('language')?.hasError('required')) {
         <p class="text-sm text-red-600">Language is required.</p>
+      }
+      @if (form.get('language')?.touched && form.get('language')?.hasError('unsupportedSelection')) {
+        <p class="text-sm text-red-600">Select a supported language.</p>
       }
     </div>
   </div>
@@ -128,6 +137,9 @@
           <option [value]="option.value">{{ option.label }}</option>
         }
       </select>
+      @if (form.get('status')?.touched && form.get('status')?.hasError('unsupportedSelection')) {
+        <p class="text-sm text-red-600">Select a supported status.</p>
+      }
     </div>
   </div>
 

@@ -12,9 +12,12 @@ import {
   PLATFORM_OPTIONS,
   PROMPT_LANGUAGE_OPTIONS,
   PROMPT_TEMPLATE_STATUS_OPTIONS,
+  PromptLanguage,
+  PromptPlatform,
   PromptTemplate,
   PromptTemplateFilter,
   PromptTemplatePayload,
+  PromptTemplateStatus,
 } from '../../models/prompt.models';
 import { PromptStore } from '../../state/prompt.store';
 import { PromptTemplateCard } from '../../components/prompt-template-card/prompt-template-card';
@@ -49,9 +52,9 @@ export class PromptTemplatesPage {
 
   protected readonly filterForm = new FormGroup({
     search: new FormControl('', { nonNullable: true }),
-    platform: new FormControl('', { nonNullable: true }),
-    language: new FormControl('', { nonNullable: true }),
-    status: new FormControl('', { nonNullable: true }),
+    platform: new FormControl<PromptPlatform | ''>('', { nonNullable: true }),
+    language: new FormControl<PromptLanguage | ''>('', { nonNullable: true }),
+    status: new FormControl<PromptTemplateStatus | ''>('', { nonNullable: true }),
   });
 
   protected readonly formOpen = this.formOpenSignal.asReadonly();

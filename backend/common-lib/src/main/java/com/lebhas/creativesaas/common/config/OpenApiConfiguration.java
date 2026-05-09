@@ -80,4 +80,12 @@ public class OpenApiConfiguration {
                         "/api/v1/workspaces/*/creative-outputs/**")
                 .build();
     }
+
+    @Bean
+    GroupedOpenApi creativeApprovalApiGroup() {
+        return GroupedOpenApi.builder()
+                .group("creative-approvals")
+                .pathsToMatch("/api/v1/workspaces/*/creative-approvals/**")
+                .build();
+    }
 }

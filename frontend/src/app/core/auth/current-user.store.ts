@@ -1,9 +1,11 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
 
 import { CurrentUser, Permission, UserRole } from '@app/features/auth/models/user.models';
-import { AuthSession, StoredAuthSession } from './auth.types';
+import { AuthSession } from './auth.types';
 import { TokenStorageService } from './token-storage.service';
 import { hasAnyRole, hasPermission } from './permissions';
+
+type AuthResolutionState = 'pending' | 'authenticated' | 'anonymous';
 
 @Injectable({ providedIn: 'root' })
 export class CurrentUserStore {
@@ -22,12 +24,15 @@ export class CurrentUserStore {
   private readonly refreshTokenExpiresAtSignal = signal<string | null>(
     this.restoredSession?.refreshTokenExpiresAt ?? null,
   );
-  private readonly currentUserSignal = signal<CurrentUser | null>(this.restoredSession?.user ?? null);
+  private readonly currentUserSignal = signal<CurrentUser | null>(null);
   private readonly activeWorkspaceIdSignal = signal<string | null>(
-    this.restoredSession?.activeWorkspaceId ?? this.restoredSession?.user.workspace.id ?? null,
+    this.restoredSession?.activeWorkspaceId ?? null,
   );
   private readonly authLoadingSignal = signal(false);
   private readonly authErrorSignal = signal<string | null>(null);
+  private readonly authResolutionSignal = signal<AuthResolutionState>(
+    this.restoredSession ? 'pending' : 'anonymous',
+  );
 
   readonly accessToken = this.accessTokenSignal.asReadonly();
   readonly refreshToken = this.refreshTokenSignal.asReadonly();
@@ -35,22 +40,30 @@ export class CurrentUserStore {
   readonly activeWorkspaceId = this.activeWorkspaceIdSignal.asReadonly();
   readonly authLoading = this.authLoadingSignal.asReadonly();
   readonly authError = this.authErrorSignal.asReadonly();
+  readonly authResolved = computed(() => this.authResolutionSignal() !== 'pending');
 
   readonly isAuthenticated = computed(
-    () => Boolean(this.accessTokenSignal() && this.refreshTokenSignal() && this.currentUserSignal()),
+    () =>
+      this.authResolutionSignal() === 'authenticated' &&
+      Boolean(this.accessTokenSignal() && this.refreshTokenSignal() && this.currentUserSignal()),
   );
   readonly currentRole = computed(() => this.currentUserSignal()?.role ?? null);
   readonly permissions = computed(() => this.currentUserSignal()?.permissions ?? []);
   readonly displayName = computed(() => this.currentUserSignal()?.fullName ?? 'User');
 
   setSession(session: AuthSession): void {
-    const activeWorkspaceId = session.user.workspace.id;
-    const storedSession: StoredAuthSession = {
-      ...session,
-      activeWorkspaceId,
-    };
+    const activeWorkspaceId =
+      session.user.role === 'MASTER'
+        ? this.activeWorkspaceIdSignal() ?? session.user.workspace.id
+        : session.user.workspace.id;
 
-    this.tokenStorage.setSession(storedSession);
+    this.tokenStorage.setSession({
+      accessToken: session.accessToken,
+      refreshToken: session.refreshToken,
+      accessTokenExpiresAt: session.accessTokenExpiresAt,
+      refreshTokenExpiresAt: session.refreshTokenExpiresAt,
+      activeWorkspaceId,
+    });
     this.accessTokenSignal.set(session.accessToken);
     this.refreshTokenSignal.set(session.refreshToken);
     this.accessTokenExpiresAtSignal.set(session.accessTokenExpiresAt);
@@ -58,13 +71,17 @@ export class CurrentUserStore {
     this.currentUserSignal.set(session.user);
     this.activeWorkspaceIdSignal.set(activeWorkspaceId);
     this.authErrorSignal.set(null);
+    this.authResolutionSignal.set('authenticated');
   }
 
   patchCurrentUser(user: CurrentUser): void {
     this.currentUserSignal.set(user);
-    if (!this.activeWorkspaceIdSignal() && user.workspace.id) {
+    if (user.role !== 'MASTER') {
+      this.activeWorkspaceIdSignal.set(user.workspace.id);
+    } else if (!this.activeWorkspaceIdSignal() && user.workspace.id) {
       this.activeWorkspaceIdSignal.set(user.workspace.id);
     }
+    this.authResolutionSignal.set('authenticated');
     this.persist();
   }
 
@@ -81,6 +98,28 @@ export class CurrentUserStore {
     this.authErrorSignal.set(message);
   }
 
+  beginSessionValidation(): void {
+    if (this.accessTokenSignal() && this.refreshTokenSignal()) {
+      this.authResolutionSignal.set('pending');
+    }
+  }
+
+  markAnonymous(): void {
+    this.authResolutionSignal.set('anonymous');
+  }
+
+  hasRestorableSession(): boolean {
+    return Boolean(this.accessTokenSignal() && this.refreshTokenSignal());
+  }
+
+  hasValidAccessToken(): boolean {
+    return this.hasValidExpiry(this.accessTokenExpiresAtSignal());
+  }
+
+  hasValidRefreshToken(): boolean {
+    return this.hasValidExpiry(this.refreshTokenExpiresAtSignal());
+  }
+
   clearSession(): void {
     this.tokenStorage.clear();
     this.accessTokenSignal.set(null);
@@ -91,6 +130,7 @@ export class CurrentUserStore {
     this.activeWorkspaceIdSignal.set(null);
     this.authLoadingSignal.set(false);
     this.authErrorSignal.set(null);
+    this.authResolutionSignal.set('anonymous');
   }
 
   hasAnyRole(roles: readonly UserRole[]): boolean {
@@ -106,9 +146,8 @@ export class CurrentUserStore {
     const refreshToken = this.refreshTokenSignal();
     const accessTokenExpiresAt = this.accessTokenExpiresAtSignal();
     const refreshTokenExpiresAt = this.refreshTokenExpiresAtSignal();
-    const user = this.currentUserSignal();
 
-    if (!accessToken || !refreshToken || !accessTokenExpiresAt || !refreshTokenExpiresAt || !user) {
+    if (!accessToken || !refreshToken || !accessTokenExpiresAt || !refreshTokenExpiresAt) {
       this.tokenStorage.clear();
       return;
     }
@@ -118,8 +157,20 @@ export class CurrentUserStore {
       refreshToken,
       accessTokenExpiresAt,
       refreshTokenExpiresAt,
-      user,
       activeWorkspaceId: this.activeWorkspaceIdSignal(),
     });
+  }
+
+  private hasValidExpiry(expiresAt: string | null): boolean {
+    if (!expiresAt) {
+      return false;
+    }
+
+    const parsed = Date.parse(expiresAt);
+    if (Number.isNaN(parsed)) {
+      return false;
+    }
+
+    return parsed - 30_000 > Date.now();
   }
 }

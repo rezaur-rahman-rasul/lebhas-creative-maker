@@ -61,7 +61,7 @@ export class LoginFormComponent {
       return '';
     }
 
-    return control.hasError('required') ? 'Enter your email or mobile number.' : '';
+    return control.hasError('required') ? 'Enter your email address.' : '';
   }
 
   protected passwordError(): string {

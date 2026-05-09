@@ -1,7 +1,9 @@
 import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
 import { RouterLink } from '@angular/router';
 
+import { CurrentUserStore } from '@app/core/auth/current-user.store';
 import { BadgeComponent } from '@app/shared/components/badge/badge';
+import { ButtonComponent } from '@app/shared/components/button/button';
 import { CardComponent } from '@app/shared/components/card/card';
 import { EmptyStateComponent } from '@app/shared/components/empty-state/empty-state';
 import { IconComponent } from '@app/shared/components/icon/icon';
@@ -20,6 +22,7 @@ import { WorkspaceSummaryCardComponent } from '../../components/workspace-summar
   imports: [
     RouterLink,
     BadgeComponent,
+    ButtonComponent,
     CardComponent,
     EmptyStateComponent,
     IconComponent,
@@ -32,6 +35,7 @@ import { WorkspaceSummaryCardComponent } from '../../components/workspace-summar
 })
 export class WorkspaceDashboardPageComponent {
   protected readonly store = inject(WorkspaceStore);
+  private readonly auth = inject(CurrentUserStore);
   protected readonly workspace = this.store.currentWorkspace;
   protected readonly settings = this.store.workspaceSettings;
   protected readonly skeletonCards = Array.from({ length: 4 }, (_, index) => index);
@@ -62,8 +66,20 @@ export class WorkspaceDashboardPageComponent {
     const visibility = this.settings()?.workspaceVisibility;
     return visibility ? WORKSPACE_VISIBILITY_LABELS[visibility] : 'Private';
   });
+  protected readonly roleLabel = computed(() => this.auth.currentRole() ?? 'ADMIN');
+  protected readonly roleTone = computed(() =>
+    this.auth.currentRole() === 'MASTER'
+      ? 'red'
+      : this.auth.currentRole() === 'CREW'
+        ? 'blue'
+        : 'brand',
+  );
 
   constructor() {
+    void this.store.loadWorkspaceDashboardContext();
+  }
+
+  protected reload(): void {
     void this.store.loadWorkspaceDashboardContext();
   }
 

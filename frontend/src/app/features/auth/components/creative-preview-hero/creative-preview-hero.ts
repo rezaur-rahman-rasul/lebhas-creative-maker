@@ -31,7 +31,7 @@ export class CreativePreviewHeroComponent {
   ];
 
   protected readonly floatingBadges: readonly FloatingTag[] = [
-    { label: 'AI Creative', classes: 'left-8 top-0' },
+    { label: 'Brand Attire', classes: 'left-8 top-0' },
     { label: 'Ad Ready', classes: 'right-20 top-24' },
     { label: '16:45', classes: 'left-28 bottom-2' },
     { label: 'PNG', classes: 'right-8 bottom-8' },

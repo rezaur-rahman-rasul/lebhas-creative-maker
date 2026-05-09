@@ -5,7 +5,7 @@
       [description]="pageDescription()"
     >
       <app-badge [tone]="canManage() ? 'brand' : 'neutral'">
-        {{ canManage() ? 'Admin access' : 'Read only' }}
+        {{ canManage() ? 'Manage access' : 'Read only' }}
       </app-badge>
       @if (canManage()) {
         <app-button icon="user-plus" (click)="inviteOpen.set(true)">Invite crew</app-button>
@@ -37,8 +37,8 @@
       <div class="mt-6">
         <app-empty-state
           icon="users"
-          title="Crew management is admin scoped"
-          description="This workspace area stays available to admins with explicit crew permissions."
+          title="Crew management is unavailable"
+          description="This session does not currently have the permissions required to manage crew access."
         />
       </div>
     } @else {

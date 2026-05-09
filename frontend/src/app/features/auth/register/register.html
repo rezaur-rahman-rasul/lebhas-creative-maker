@@ -92,14 +92,16 @@
           [externalError]="confirmPasswordError()"
         />
 
-        <app-button
-          type="submit"
-          icon="user-plus"
-          [fullWidth]="true"
-          [loading]="auth.authLoading()"
-        >
-          Create workspace
-        </app-button>
+        <div class="pt-2">
+          <app-button
+            type="submit"
+            icon="user-plus"
+            [fullWidth]="true"
+            [loading]="auth.authLoading()"
+          >
+            Create workspace
+          </app-button>
+        </div>
       </form>
 
       <p class="mt-6 text-center text-sm text-muted">

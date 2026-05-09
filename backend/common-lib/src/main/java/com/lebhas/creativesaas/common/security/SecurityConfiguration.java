@@ -1,11 +1,7 @@
 package com.lebhas.creativesaas.common.security;
 
-import com.lebhas.creativesaas.common.api.ApiError;
-import com.lebhas.creativesaas.common.api.ApiResponse;
 import com.lebhas.creativesaas.common.constants.CommonHeaders;
-import com.lebhas.creativesaas.common.exception.ErrorCode;
-import jakarta.servlet.http.HttpServletResponse;
-import tools.jackson.databind.ObjectMapper;
+import com.lebhas.creativesaas.common.security.rate.AuthenticationRateLimitProperties;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.beans.factory.annotation.Value;
@@ -29,15 +25,20 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import com.lebhas.creativesaas.common.security.session.AccessTokenRevocationStore;
-import com.lebhas.creativesaas.common.security.session.NoOpAccessTokenRevocationStore;
+import com.lebhas.creativesaas.common.security.session.AccessTokenRevocationRepository;
+import com.lebhas.creativesaas.common.security.session.CompositeAccessTokenRevocationStore;
+import com.lebhas.creativesaas.common.security.session.PersistentAccessTokenRevocationStore;
 import com.lebhas.creativesaas.common.security.session.RedisAccessTokenRevocationStore;
 
-import java.io.IOException;
 import java.util.List;
 
 @Configuration
 @EnableMethodSecurity
-@EnableConfigurationProperties({SecurityProperties.class, com.lebhas.creativesaas.common.security.jwt.JwtProperties.class})
+@EnableConfigurationProperties({
+        SecurityProperties.class,
+        com.lebhas.creativesaas.common.security.jwt.JwtProperties.class,
+        AuthenticationRateLimitProperties.class
+})
 public class SecurityConfiguration {
 
     private static final String[] PUBLIC_ENDPOINTS = {
@@ -48,21 +49,19 @@ public class SecurityConfiguration {
             "/api/v1/auth/register",
             "/api/v1/auth/login",
             "/api/v1/auth/refresh",
+            "/internal/storage/local/assets/**",
             "/swagger-ui.html",
             "/swagger-ui/**",
             "/v3/api-docs/**"
     };
 
-    private final ObjectMapper objectMapper;
     private final RestAuthenticationEntryPoint authenticationEntryPoint;
     private final RestAccessDeniedHandler accessDeniedHandler;
 
     public SecurityConfiguration(
-            ObjectMapper objectMapper,
             RestAuthenticationEntryPoint authenticationEntryPoint,
             RestAccessDeniedHandler accessDeniedHandler
     ) {
-        this.objectMapper = objectMapper;
         this.authenticationEntryPoint = authenticationEntryPoint;
         this.accessDeniedHandler = accessDeniedHandler;
     }
@@ -136,28 +135,21 @@ public class SecurityConfiguration {
     @Bean
     @ConditionalOnMissingBean(AccessTokenRevocationStore.class)
     AccessTokenRevocationStore accessTokenRevocationStore(
-            org.springframework.beans.factory.ObjectProvider<StringRedisTemplate> redisTemplateProvider,
+            AccessTokenRevocationRepository accessTokenRevocationRepository,
+            StringRedisTemplate redisTemplate,
             java.time.Clock clock,
             @Value("${platform.redis.token-namespace:creative-saas:tokens}") String namespace
     ) {
-        StringRedisTemplate redisTemplate = redisTemplateProvider.getIfAvailable();
-        if (redisTemplate != null) {
-            return new RedisAccessTokenRevocationStore(redisTemplate, clock, namespace);
-        }
-        return new NoOpAccessTokenRevocationStore();
+        PersistentAccessTokenRevocationStore persistentStore =
+                new PersistentAccessTokenRevocationStore(accessTokenRevocationRepository, clock);
+        RedisAccessTokenRevocationStore redisStore =
+                new RedisAccessTokenRevocationStore(redisTemplate, clock, namespace);
+        return new CompositeAccessTokenRevocationStore(persistentStore, redisStore);
     }
 
     @Bean
     @ConditionalOnMissingBean(JwtTokenParser.class)
     JwtTokenParser jwtTokenParserFallback() {
         return new NoopJwtTokenParser();
-    }
-
-    private void writeSecurityError(HttpServletResponse response, HttpStatus status, ErrorCode errorCode) throws IOException {
-        response.setStatus(status.value());
-        response.setContentType(MediaType.APPLICATION_JSON_VALUE);
-        objectMapper.writeValue(response.getOutputStream(), ApiResponse.failure(
-                errorCode.defaultMessage(),
-                ApiError.of(errorCode.code(), errorCode.defaultMessage())));
     }
 }

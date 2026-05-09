@@ -17,7 +17,7 @@
           @if (!layout.sidebarCollapsed()) {
             <div class="min-w-0">
               <p class="truncate text-sm font-semibold text-ink">Creative SaaS</p>
-              <p class="truncate text-xs text-muted">{{ auth.currentUser()?.workspaceName }}</p>
+              <p class="truncate text-xs text-muted">{{ workspaceLabel() }}</p>
             </div>
           }
         </div>

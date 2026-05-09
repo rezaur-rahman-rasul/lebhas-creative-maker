@@ -3,6 +3,7 @@
       <button
         type="button"
         class="flex items-center gap-3 rounded-md border border-border bg-white px-2 py-1.5 transition hover:bg-slate-50"
+        data-testid="user-menu-trigger"
         (click)="open.update((value) => !value)"
         aria-haspopup="menu"
         [attr.aria-expanded]="open()"
@@ -44,6 +45,7 @@
           <button
             type="button"
             class="mt-4 flex h-10 w-full items-center justify-between rounded-md px-3 text-sm font-medium text-slate-600 transition hover:bg-slate-100 hover:text-ink"
+            data-testid="logout-button"
             (click)="logout()"
           >
             <span>Logout</span>

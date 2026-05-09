@@ -16,10 +16,16 @@ public class WorkspacePermissionPolicy {
 
     private static final Set<Permission> DEFAULT_CREW_PERMISSIONS = Set.of(
             Permission.WORKSPACE_VIEW,
+            Permission.ASSET_VIEW,
             Permission.CREATIVE_GENERATE);
 
     private static final Set<Permission> ASSIGNABLE_CREW_PERMISSIONS = Set.of(
             Permission.WORKSPACE_VIEW,
+            Permission.ASSET_VIEW,
+            Permission.ASSET_UPLOAD,
+            Permission.PROMPT_TEMPLATE_VIEW,
+            Permission.PROMPT_INTELLIGENCE_USE,
+            Permission.PROMPT_HISTORY_VIEW,
             Permission.CREATIVE_GENERATE,
             Permission.CREATIVE_EDIT,
             Permission.CREATIVE_DOWNLOAD,
@@ -46,6 +52,7 @@ public class WorkspacePermissionPolicy {
                 ? EnumSet.copyOf(DEFAULT_CREW_PERMISSIONS)
                 : EnumSet.copyOf(requestedPermissions);
         normalized.add(Permission.WORKSPACE_VIEW);
+        normalized.add(Permission.ASSET_VIEW);
         if (!ASSIGNABLE_CREW_PERMISSIONS.containsAll(normalized)) {
             throw new BusinessException(
                     ErrorCode.WORKSPACE_PERMISSION_INVALID,

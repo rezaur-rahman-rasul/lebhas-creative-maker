@@ -4,7 +4,7 @@
       [title]="title()"
       [description]="description()"
     >
-      <app-badge tone="brand">ADMIN</app-badge>
+      <app-badge [tone]="roleTone()">{{ roleLabel() }}</app-badge>
       @if (workspace()) {
         <app-badge [tone]="statusTone()">{{ statusLabel() }}</app-badge>
       }
@@ -148,6 +148,18 @@
           }
         </div>
       </section>
+    } @else if (store.workspaceError()) {
+      <div class="mt-6">
+        <app-empty-state
+          icon="circle-alert"
+          title="Workspace could not be loaded"
+          [description]="store.workspaceError()!"
+        >
+          <app-button variant="secondary" icon="arrow-right" (click)="reload()">
+            Try again
+          </app-button>
+        </app-empty-state>
+      </div>
     } @else {
       <div class="mt-6">
         <app-empty-state

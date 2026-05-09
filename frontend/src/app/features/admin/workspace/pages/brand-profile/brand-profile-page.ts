@@ -24,7 +24,7 @@ export class BrandProfilePageComponent {
   protected readonly pageDescription = computed(() =>
     this.canEdit()
       ? 'Capture the brand inputs that future AI creative generation and review workflows will use.'
-      : 'Brand profile context is visible here for review, while editing stays scoped to admin users.',
+      : 'Brand profile context is visible here for review, but this session cannot update it.',
   );
 
   constructor() {

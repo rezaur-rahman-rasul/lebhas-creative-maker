@@ -1,3 +1,4 @@
+import { HttpContext } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { map } from 'rxjs';
 
@@ -46,9 +47,9 @@ interface UpdateBrandProfileRequestDto {
 export class BrandProfileService {
   private readonly api = inject(ApiService);
 
-  getBrandProfile(workspaceId: string) {
+  getBrandProfile(workspaceId: string, context?: HttpContext) {
     return this.api
-      .get<BrandProfileResponseDto>(`/api/v1/workspaces/${workspaceId}/brand-profile`)
+      .get<BrandProfileResponseDto>(`/api/v1/workspaces/${workspaceId}/brand-profile`, { context })
       .pipe(map(({ data }) => mapBrandProfile(data)));
   }
 

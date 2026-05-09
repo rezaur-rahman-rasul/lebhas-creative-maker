@@ -34,7 +34,7 @@ export class WorkspaceSettingsPageComponent {
   protected readonly pageDescription = computed(() =>
     this.canEdit()
       ? 'Update the workspace identity, crew policy toggles, and default operating preferences.'
-      : 'Workspace settings are visible here for oversight, but editing is reserved for admin users.',
+      : 'Workspace settings are visible here for oversight, but this session cannot change them.',
   );
 
   constructor() {

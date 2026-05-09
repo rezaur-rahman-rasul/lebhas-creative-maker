@@ -8,5 +8,9 @@ import { ChangeDetectionStrategy, Component } from '@angular/core';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class AuthFooterComponent {
-  protected readonly footerItems = ['Lebhas - Business Attire', 'AI Creative SaaS', 'Dhaka, Bangladesh'];
+  protected readonly footerItems = [
+      'Lebhas - Brand Attire',
+    'Create Ads Beyond Imagination',
+    'Dhaka, Bangladesh',
+  ];
 }

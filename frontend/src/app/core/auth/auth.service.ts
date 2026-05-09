@@ -70,7 +70,10 @@ export class AuthService {
   async getCurrentUser(): Promise<CurrentUser> {
     const response = await firstValueFrom(
       this.api.get<CurrentUserResponse>(`${this.authBasePath}/me`, {
-        context: this.authRequestContext({ skipGlobalLoading: true }),
+        context: this.authRequestContext({
+          skipGlobalLoading: true,
+          skipRefresh: true,
+        }),
       }),
     );
 
@@ -121,10 +124,10 @@ export class AuthService {
       updatedAt: response.updatedAt,
       permissions: response.permissions,
       workspaceId: response.workspaceId,
-      workspaceName: response.workspaceId ? 'Primary workspace' : null,
+      workspaceName: null,
       workspace: {
         id: response.workspaceId,
-        name: response.workspaceId ? 'Primary workspace' : null,
+        name: null,
       },
     };
   }

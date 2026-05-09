@@ -31,7 +31,10 @@ export class UserProfileDropdownComponent {
   protected readonly open = signal(false);
   protected readonly badgeTone = computed(() => roleBadgeTone(this.userStore.currentRole()));
   protected readonly workspaceName = computed(
-    () => this.userStore.currentUser()?.workspaceName ?? 'Workspace name pending',
+    () =>
+      this.userStore.currentUser()?.workspaceName ??
+      this.userStore.activeWorkspaceId() ??
+      'Workspace not selected',
   );
 
   @HostListener('document:click', ['$event'])

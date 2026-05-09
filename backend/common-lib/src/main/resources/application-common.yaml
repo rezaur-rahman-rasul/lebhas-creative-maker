@@ -82,11 +82,22 @@ springdoc:
 
 platform:
   security:
-    allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:4200,http://localhost:4300}
+    allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:4200,http://127.0.0.1:4200,http://[::1]:4200,http://localhost:4300,http://127.0.0.1:4300,http://[::1]:4300}
     allowed-methods: GET,POST,PUT,PATCH,DELETE,OPTIONS
     allowed-headers: "*"
     allow-credentials: false
     max-age-seconds: 3600
+    rate-limit:
+      login:
+        max-attempts-per-ip: ${LOGIN_RATE_LIMIT_IP_ATTEMPTS:20}
+        max-attempts-per-identity: ${LOGIN_RATE_LIMIT_IDENTITY_ATTEMPTS:8}
+        lockout-threshold: ${LOGIN_LOCKOUT_THRESHOLD:5}
+        window: ${LOGIN_RATE_LIMIT_WINDOW:15m}
+        lockout-duration: ${LOGIN_LOCKOUT_DURATION:15m}
+      refresh:
+        max-attempts-per-ip: ${REFRESH_RATE_LIMIT_IP_ATTEMPTS:40}
+        max-attempts-per-token: ${REFRESH_RATE_LIMIT_TOKEN_ATTEMPTS:6}
+        window: ${REFRESH_RATE_LIMIT_WINDOW:15m}
     jwt:
       issuer: ${JWT_ISSUER:creative-saas-platform}
       secret-base64: ${JWT_SECRET_BASE64:Q3JlYXRpdmVTYWFTUGxhdGZvcm1EZXYyMDI2U2lnbmluZ1NlY3JldEJhc2U2NEtleUZvckxvY2FsVXNlT25seQ==}
@@ -98,6 +109,37 @@ platform:
     token-namespace: creative-saas:tokens
     rate-limit-namespace: creative-saas:rate-limits
     session-namespace: creative-saas:sessions
+  storage:
+    provider: ${STORAGE_PROVIDER:LOCAL}
+    bucket: ${STORAGE_BUCKET:creative-saas-assets}
+    signed-url-ttl: ${STORAGE_SIGNED_URL_TTL:15m}
+    s3:
+      region: ${S3_REGION:ap-southeast-1}
+      endpoint: ${S3_ENDPOINT:}
+      access-key: ${S3_ACCESS_KEY:}
+      secret-key: ${S3_SECRET_KEY:}
+      path-style-access-enabled: ${S3_PATH_STYLE_ACCESS_ENABLED:true}
+    local:
+      root-path: ${LOCAL_STORAGE_ROOT:./var/storage}
+      base-url: ${LOCAL_STORAGE_BASE_URL:http://localhost:8080}
+      signing-secret: ${LOCAL_STORAGE_SIGNING_SECRET:creative-saas-local-asset-url-secret}
+  prompt:
+    rate-limit:
+      max-requests-per-user: ${PROMPT_RATE_LIMIT_USER:60}
+      max-requests-per-workspace: ${PROMPT_RATE_LIMIT_WORKSPACE:300}
+      max-requests-per-ip: ${PROMPT_RATE_LIMIT_IP:120}
+      window: ${PROMPT_RATE_LIMIT_WINDOW:1h}
+  ai:
+    text:
+      provider: ${TEXT_AI_PROVIDER:DISABLED}
+      request-timeout: ${TEXT_AI_REQUEST_TIMEOUT:20s}
+      open-ai:
+        base-url: ${OPENAI_BASE_URL:https://api.openai.com}
+        chat-path: ${OPENAI_CHAT_PATH:/v1/chat/completions}
+        api-key: ${OPENAI_API_KEY:}
+        model: ${OPENAI_MODEL:gpt-4.1-mini}
+        organization: ${OPENAI_ORGANIZATION:}
+        project: ${OPENAI_PROJECT:}
 
 logging:
   pattern:

@@ -38,24 +38,11 @@ export const ADMIN_ROUTES: Routes = [
   },
   {
     path: 'assets',
-    component: RoleSectionPageComponent,
-    data: {
-      section: {
-        eyebrow: 'Workspace',
-        title: 'Assets',
-        description: 'Asset operations will connect later without changing the access shell.',
-        badgeLabel: 'ADMIN',
-        badgeTone: 'brand',
-        emptyIcon: 'image',
-        emptyTitle: 'Assets are out of scope',
-        emptyDescription: 'Day 2 leaves upload and media workflows for later implementation days.',
-        highlights: [
-          { title: 'Protected access', description: 'Assets routes already sit behind auth and workspace guards.' },
-          { title: 'Tenant awareness', description: 'Workspace context is ready to scope future media APIs.' },
-          { title: 'Clean expansion path', description: 'The route surface is prepared without extra placeholder logic.' },
-        ],
-      },
-    },
+    loadChildren: () => import('./assets/assets.routes').then((m) => m.ASSET_ROUTES),
+  },
+  {
+    path: 'prompts',
+    loadChildren: () => import('./prompts/prompts.routes').then((m) => m.PROMPT_ROUTES),
   },
   {
     path: 'creatives',

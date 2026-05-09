@@ -35,9 +35,9 @@ export interface AuthSessionResponse {
 export interface RememberedProfile {
   readonly id: string;
   readonly name: string;
-  readonly avatarUrl: string;
+  readonly avatarUrl: string | null;
   readonly email: string;
-  readonly hasSavedPassword: boolean;
+  readonly lastUsedAt: string;
 }
 
 export type LoginResponse = AuthSessionResponse;

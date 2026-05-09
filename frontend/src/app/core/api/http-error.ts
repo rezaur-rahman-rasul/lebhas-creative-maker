@@ -11,6 +11,14 @@ export interface NormalizedHttpError {
 export function normalizeHttpError(error: unknown): NormalizedHttpError {
   if (error instanceof HttpErrorResponse) {
     const body = error.error as Partial<ApiResponse<unknown>> | null;
+    if (error.status === 0) {
+      return {
+        status: 0,
+        message: 'Unable to reach the API gateway. Confirm the local backend is running and accessible.',
+        errors: [],
+      };
+    }
+
     return {
       status: error.status,
       message: body?.message || error.message || 'Request failed',

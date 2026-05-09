@@ -1,0 +1,22 @@
+package com.lebhas.creativesaas.prompt.application.dto;
+
+import com.lebhas.creativesaas.prompt.domain.CampaignObjective;
+import com.lebhas.creativesaas.prompt.domain.PromptLanguage;
+import com.lebhas.creativesaas.prompt.domain.PromptPlatform;
+import com.lebhas.creativesaas.prompt.domain.PromptTemplateStatus;
+
+import java.util.UUID;
+
+public record CreatePromptTemplateCommand(
+        UUID workspaceId,
+        String name,
+        String description,
+        PromptPlatform platform,
+        CampaignObjective campaignObjective,
+        String businessType,
+        PromptLanguage language,
+        String templateText,
+        boolean systemDefault,
+        PromptTemplateStatus status
+) {
+}

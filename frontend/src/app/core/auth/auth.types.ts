@@ -12,9 +12,11 @@ export interface AuthSession extends AuthTokens {
   readonly user: CurrentUser;
 }
 
-export interface StoredAuthSession extends AuthSession {
+export interface PersistedAuthSession extends AuthTokens {
   readonly activeWorkspaceId: string | null;
 }
+
+export interface StoredAuthSession extends AuthSession, PersistedAuthSession {}
 
 export interface AuthActionFailure {
   readonly ok: false;

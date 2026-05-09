@@ -49,6 +49,15 @@ public class UserEntity extends BaseEntity {
     @Column(name = "last_login_at")
     private Instant lastLoginAt;
 
+    @Column(name = "failed_login_attempts", nullable = false)
+    private int failedLoginAttempts;
+
+    @Column(name = "last_failed_login_at")
+    private Instant lastFailedLoginAt;
+
+    @Column(name = "locked_until")
+    private Instant lockedUntil;
+
     protected UserEntity() {
     }
 
@@ -110,8 +119,24 @@ public class UserEntity extends BaseEntity {
         return lastLoginAt;
     }
 
+    public int getFailedLoginAttempts() {
+        return failedLoginAttempts;
+    }
+
+    public Instant getLastFailedLoginAt() {
+        return lastFailedLoginAt;
+    }
+
+    public Instant getLockedUntil() {
+        return lockedUntil;
+    }
+
     public boolean isActive() {
         return status == UserStatus.ACTIVE;
+    }
+
+    public boolean isLockedAt(Instant now) {
+        return lockedUntil != null && lockedUntil.isAfter(now);
     }
 
     public void updateProfile(String firstName, String lastName, String email, String phone) {
@@ -139,6 +164,18 @@ public class UserEntity extends BaseEntity {
 
     public void markLastLogin(Instant lastLoginAt) {
         this.lastLoginAt = lastLoginAt;
+    }
+
+    public void recordFailedLogin(Instant failedAt, long attempts, Instant lockedUntil) {
+        this.failedLoginAttempts = (int) Math.min(attempts, Integer.MAX_VALUE);
+        this.lastFailedLoginAt = failedAt;
+        this.lockedUntil = lockedUntil;
+    }
+
+    public void clearFailedLoginState() {
+        this.failedLoginAttempts = 0;
+        this.lastFailedLoginAt = null;
+        this.lockedUntil = null;
     }
 
     private static String normalizeEmail(String email) {

@@ -28,7 +28,7 @@ export class RememberedPasswordDialogComponent {
 
   protected readonly attemptedSubmit = signal(false);
   protected readonly form = this.formBuilder.group({
-    password: ['', [Validators.required, Validators.minLength(6)]],
+    password: ['', [Validators.required, Validators.minLength(8)]],
   });
 
   constructor() {
@@ -36,7 +36,7 @@ export class RememberedPasswordDialogComponent {
       const open = this.open();
       const profileId = this.profile()?.id ?? '';
 
-      if (!open || profileId) {
+      if (!open || !!profileId) {
         this.form.reset();
         this.attemptedSubmit.set(false);
       }
@@ -75,7 +75,7 @@ export class RememberedPasswordDialogComponent {
     }
 
     if (control.hasError('minlength')) {
-      return 'Password must be at least 6 characters.';
+      return 'Password must be at least 8 characters.';
     }
 
     return '';

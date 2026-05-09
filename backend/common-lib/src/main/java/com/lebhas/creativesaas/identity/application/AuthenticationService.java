@@ -10,6 +10,7 @@ import com.lebhas.creativesaas.common.security.context.CurrentUser;
 import com.lebhas.creativesaas.common.security.context.CurrentUserContext;
 import com.lebhas.creativesaas.common.security.jwt.IssuedAccessToken;
 import com.lebhas.creativesaas.common.security.jwt.JwtAccessTokenService;
+import com.lebhas.creativesaas.common.security.rate.AuthenticationThrottleService;
 import com.lebhas.creativesaas.common.security.session.AccessTokenRevocationStore;
 import com.lebhas.creativesaas.identity.application.dto.AuthSessionView;
 import com.lebhas.creativesaas.identity.application.dto.LoginCommand;
@@ -29,6 +30,7 @@ import com.lebhas.creativesaas.workspace.domain.WorkspaceLanguage;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.DisabledException;
+import org.springframework.security.authentication.LockedException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -59,6 +61,7 @@ public class AuthenticationService {
     private final WorkspaceProvisioningService workspaceProvisioningService;
     private final AccessTokenRevocationStore accessTokenRevocationStore;
     private final SecurityAuditLogger securityAuditLogger;
+    private final AuthenticationThrottleService authenticationThrottleService;
     private final Clock clock;
 
     public AuthenticationService(
@@ -77,6 +80,7 @@ public class AuthenticationService {
             WorkspaceProvisioningService workspaceProvisioningService,
             AccessTokenRevocationStore accessTokenRevocationStore,
             SecurityAuditLogger securityAuditLogger,
+            AuthenticationThrottleService authenticationThrottleService,
             Clock clock
     ) {
         this.authenticationManager = authenticationManager;
@@ -94,6 +98,7 @@ public class AuthenticationService {
         this.workspaceProvisioningService = workspaceProvisioningService;
         this.accessTokenRevocationStore = accessTokenRevocationStore;
         this.securityAuditLogger = securityAuditLogger;
+        this.authenticationThrottleService = authenticationThrottleService;
         this.clock = clock;
     }
 
@@ -148,23 +153,38 @@ public class AuthenticationService {
 
     @Transactional
     public AuthSessionView login(LoginCommand command) {
-        securityAuditLogger.logLoginAttempt(command.email(), command.workspaceId());
+        String normalizedEmail = normalizeEmail(command.email());
+        UserEntity user = userRepository.findByEmailIgnoreCaseAndDeletedFalse(normalizedEmail).orElse(null);
+        securityAuditLogger.logLoginAttempt(normalizedEmail, command.workspaceId(), command.clientIp());
+        authenticationThrottleService.assertLoginAllowed(normalizedEmail, command.clientIp(), user);
         try {
-            authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(command.email(), command.password()));
+            authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(normalizedEmail, command.password()));
+        } catch (LockedException exception) {
+            securityAuditLogger.logLoginFailure(normalizedEmail, command.workspaceId(), "account_locked");
+            throw new BusinessException(ErrorCode.AUTH_RATE_LIMITED, "Account is temporarily locked due to repeated failed login attempts");
         } catch (DisabledException exception) {
-            securityAuditLogger.logLoginFailure(command.email(), command.workspaceId(), "account_disabled");
+            securityAuditLogger.logLoginFailure(normalizedEmail, command.workspaceId(), "account_disabled");
             throw new BusinessException(ErrorCode.USER_INACTIVE);
         } catch (BadCredentialsException exception) {
-            securityAuditLogger.logLoginFailure(command.email(), command.workspaceId(), "bad_credentials");
+            AuthenticationThrottleService.LoginFailureState failureState =
+                    authenticationThrottleService.recordLoginFailure(normalizedEmail, command.clientIp());
+            if (user != null) {
+                user.recordFailedLogin(clock.instant(), failureState.identityAttempts(), failureState.lockedUntil());
+                userRepository.save(user);
+                if (failureState.lockedUntil() != null) {
+                    securityAuditLogger.logAccountLocked(user.getId(), normalizedEmail, failureState.lockedUntil());
+                }
+            }
+            securityAuditLogger.logLoginFailure(normalizedEmail, command.workspaceId(), "bad_credentials");
             throw new BusinessException(ErrorCode.INVALID_CREDENTIALS);
         } catch (AuthenticationException exception) {
-            securityAuditLogger.logLoginFailure(command.email(), command.workspaceId(), "authentication_failed");
+            securityAuditLogger.logLoginFailure(normalizedEmail, command.workspaceId(), "authentication_failed");
             throw new BusinessException(ErrorCode.UNAUTHORIZED);
         }
-        UserEntity user = userRepository.findByEmailIgnoreCaseAndDeletedFalse(command.email())
+        user = userRepository.findByEmailIgnoreCaseAndDeletedFalse(normalizedEmail)
                 .orElseThrow(() -> new BusinessException(ErrorCode.INVALID_CREDENTIALS));
         if (!user.isActive()) {
-            securityAuditLogger.logLoginFailure(command.email(), command.workspaceId(), "user_inactive");
+            securityAuditLogger.logLoginFailure(normalizedEmail, command.workspaceId(), "user_inactive");
             throw new BusinessException(ErrorCode.USER_INACTIVE);
         }
         Role effectiveRole;
@@ -176,6 +196,8 @@ public class AuthenticationService {
             workspaceId = membership.getWorkspaceId();
             effectiveRole = membership.getRole();
         }
+        authenticationThrottleService.recordLoginSuccess(normalizedEmail, command.clientIp());
+        user.clearFailedLoginState();
         user.markLastLogin(clock.instant());
         userRepository.save(user);
         securityAuditLogger.logLoginSuccess(user.getId(), workspaceId);
@@ -184,7 +206,9 @@ public class AuthenticationService {
 
     @Transactional
     public AuthSessionView refresh(RefreshSessionCommand command) {
-        RefreshTokenService.ValidatedRefreshToken validatedRefreshToken = refreshTokenService.validate(command.refreshToken());
+        authenticationThrottleService.assertRefreshAllowed(command.refreshToken(), command.clientIp());
+        RefreshTokenService.ValidatedRefreshToken validatedRefreshToken =
+                refreshTokenService.validate(command.refreshToken(), command.clientIp(), command.userAgent());
         UserEntity user = userRepository.findByIdAndDeletedFalse(validatedRefreshToken.refreshToken().getUserId())
                 .orElseThrow(() -> new BusinessException(ErrorCode.REFRESH_TOKEN_INVALID));
         if (!user.isActive()) {

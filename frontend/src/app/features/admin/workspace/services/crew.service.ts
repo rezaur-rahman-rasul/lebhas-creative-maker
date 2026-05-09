@@ -1,3 +1,4 @@
+import { HttpContext } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { map } from 'rxjs';
 
@@ -49,9 +50,9 @@ export class CrewService {
       .pipe(map(({ data }) => mapCrewInvitation(data)));
   }
 
-  listCrew(workspaceId: string) {
+  listCrew(workspaceId: string, context?: HttpContext) {
     return this.api
-      .get<readonly CrewMemberResponseDto[]>(`/api/v1/workspaces/${workspaceId}/crew`)
+      .get<readonly CrewMemberResponseDto[]>(`/api/v1/workspaces/${workspaceId}/crew`, { context })
       .pipe(map(({ data }) => data.map(mapCrewMember)));
   }
 

@@ -18,6 +18,7 @@ public class PlatformUserDetails implements UserDetails {
     private final String password;
     private final Role role;
     private final boolean enabled;
+    private final boolean accountNonLocked;
     private final Set<GrantedAuthority> authorities;
 
     private PlatformUserDetails(
@@ -26,6 +27,7 @@ public class PlatformUserDetails implements UserDetails {
             String password,
             Role role,
             boolean enabled,
+            boolean accountNonLocked,
             Set<GrantedAuthority> authorities
     ) {
         this.userId = userId;
@@ -33,10 +35,15 @@ public class PlatformUserDetails implements UserDetails {
         this.password = password;
         this.role = role;
         this.enabled = enabled;
+        this.accountNonLocked = accountNonLocked;
         this.authorities = authorities;
     }
 
-    public static PlatformUserDetails from(UserEntity user, RolePermissionRegistry rolePermissionRegistry) {
+    public static PlatformUserDetails from(
+            UserEntity user,
+            RolePermissionRegistry rolePermissionRegistry,
+            java.time.Instant now
+    ) {
         Set<GrantedAuthority> authorities = new LinkedHashSet<>();
         authorities.add(new SimpleGrantedAuthority(AuthorityNames.role(user.getRole())));
         rolePermissionRegistry.resolve(Set.of(user.getRole())).stream()
@@ -49,6 +56,7 @@ public class PlatformUserDetails implements UserDetails {
                 user.getPassword(),
                 user.getRole(),
                 user.isActive(),
+                !user.isLockedAt(now),
                 Set.copyOf(authorities));
     }
 
@@ -82,7 +90,7 @@ public class PlatformUserDetails implements UserDetails {
 
     @Override
     public boolean isAccountNonLocked() {
-        return enabled;
+        return accountNonLocked;
     }
 
     @Override

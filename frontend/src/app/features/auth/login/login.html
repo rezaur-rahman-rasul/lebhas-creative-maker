@@ -1,22 +1,21 @@
 <section class="relative">
-  @if (showRememberedProfiles()) {
+  @if (showProfilePicker()) {
     <app-remembered-profiles
       [profiles]="rememberedProfiles()"
       [loading]="authLoading()"
-      (profileSelected)="selectProfile($event)"
-      (useAnotherProfile)="showManualLogin()"
-      (manageProfiles)="openRemoveProfilesDialog()"
+      (profileSelected)="selectRememberedProfile($event)"
+      (useAnotherProfile)="openManualLogin()"
+      (manageProfiles)="openManageProfiles()"
     />
   } @else {
     <div class="space-y-4">
-      @if (hasRememberedProfiles()) {
+      @if (rememberedProfiles().length > 0) {
         <button
           type="button"
-          class="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-600 shadow-sm transition hover:border-slate-300 hover:text-slate-800"
-          (click)="showSavedProfiles()"
+          class="inline-flex items-center gap-2 text-sm font-medium text-slate-600 transition hover:text-slate-900"
+          (click)="returnToSavedProfiles()"
         >
-          <app-icon name="users" [size]="16" />
-          View saved profiles
+          Back to saved profiles
         </button>
       }
 
@@ -31,19 +30,19 @@
   }
 
   <app-remembered-password-dialog
-    [open]="showPasswordDialog()"
+    [open]="!!selectedProfile()"
     [profile]="selectedProfile()"
     [loading]="authLoading()"
-    [errorMessage]="passwordDialogError()"
-    (closed)="closePasswordDialog()"
+    [errorMessage]="rememberedPasswordError()"
+    (closed)="closeRememberedProfileDialog()"
     (forgotPassword)="showForgotPasswordHelp()"
-    (submitted)="submitRememberedPassword($event)"
+    (submitted)="submitRememberedProfilePassword($event)"
   />
 
   <app-remove-profiles-dialog
-    [open]="showRemoveProfilesDialog()"
+    [open]="manageProfilesOpen()"
     [profiles]="rememberedProfiles()"
-    (closed)="closeRemoveProfilesDialog()"
+    (closed)="closeManageProfiles()"
     (removed)="removeRememberedProfile($event)"
   />
 </section>

@@ -50,7 +50,7 @@ public class RefreshTokenService {
     }
 
     @Transactional(readOnly = true)
-    public ValidatedRefreshToken validate(String rawToken) {
+    public ValidatedRefreshToken validate(String rawToken, String clientIp, String userAgent) {
         OpaqueTokenService.ParsedOpaqueToken parsedToken = opaqueTokenService.parse(rawToken, ErrorCode.REFRESH_TOKEN_INVALID);
         RefreshTokenEntity refreshToken = refreshTokenRepository.findByTokenIdAndDeletedFalse(parsedToken.tokenId())
                 .orElseThrow(() -> new BusinessException(ErrorCode.REFRESH_TOKEN_INVALID));
@@ -63,6 +63,18 @@ public class RefreshTokenService {
         }
         if (refreshToken.isExpired(now)) {
             throw new BusinessException(ErrorCode.TOKEN_EXPIRED);
+        }
+        if (refreshToken.getClientIp() != null
+                && clientIp != null
+                && !refreshToken.getClientIp().isBlank()
+                && !refreshToken.getClientIp().equals(clientIp.trim())) {
+            throw new BusinessException(ErrorCode.REFRESH_TOKEN_INVALID, "Refresh token context does not match the original client");
+        }
+        if (refreshToken.getUserAgent() != null
+                && userAgent != null
+                && !refreshToken.getUserAgent().isBlank()
+                && !refreshToken.getUserAgent().equals(userAgent)) {
+            throw new BusinessException(ErrorCode.REFRESH_TOKEN_INVALID, "Refresh token context does not match the original client");
         }
         return new ValidatedRefreshToken(refreshToken);
     }
@@ -79,7 +91,7 @@ public class RefreshTokenService {
     @Transactional
     public void revokeSilently(String rawToken, UUID expectedUserId) {
         try {
-            ValidatedRefreshToken validatedRefreshToken = validate(rawToken);
+            ValidatedRefreshToken validatedRefreshToken = validate(rawToken, null, null);
             if (!validatedRefreshToken.refreshToken().getUserId().equals(expectedUserId)) {
                 return;
             }

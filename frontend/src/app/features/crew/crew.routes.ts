@@ -8,6 +8,17 @@ export const CREW_ROUTES: Routes = [
     loadComponent: () => import('./crew-home').then((m) => m.CrewHomeComponent),
   },
   {
+    path: 'assets',
+    loadChildren: () => import('../admin/assets/assets.routes').then((m) => m.ASSET_ROUTES),
+  },
+  {
+    path: 'prompts',
+    loadComponent: () =>
+      import('../admin/prompts/pages/prompt-builder/prompt-builder').then(
+        (m) => m.PromptBuilderPage,
+      ),
+  },
+  {
     path: 'generate-creative',
     component: RoleSectionPageComponent,
     data: {

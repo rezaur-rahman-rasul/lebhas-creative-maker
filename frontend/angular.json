@@ -116,10 +116,12 @@
           "builder": "@angular/build:dev-server",
           "configurations": {
             "local": {
-              "buildTarget": "frontend:build:local"
+              "buildTarget": "frontend:build:local",
+              "proxyConfig": "proxy.gateway.json"
             },
             "dev": {
-              "buildTarget": "frontend:build:dev"
+              "buildTarget": "frontend:build:dev",
+              "proxyConfig": "proxy.gateway.json"
             },
             "staging": {
               "buildTarget": "frontend:build:staging"

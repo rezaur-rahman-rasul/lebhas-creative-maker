@@ -3,9 +3,15 @@ import { inject } from '@angular/core';
 
 import { CurrentUserStore } from '@app/core/auth/current-user.store';
 import { NotificationStateService } from '@app/core/state/notification-state.service';
+import { AuthFacade } from '@app/features/auth/services/auth.facade';
 
-export const workspaceGuard: CanActivateFn = () => {
+export const workspaceGuard: CanActivateFn = async () => {
+  const authFacade = inject(AuthFacade);
   const authStore = inject(CurrentUserStore);
+  const notifications = inject(NotificationStateService);
+  const router = inject(Router);
+
+  await authFacade.initialize();
 
   if (authStore.currentRole() === 'MASTER') {
     return true;
@@ -15,10 +21,10 @@ export const workspaceGuard: CanActivateFn = () => {
     return true;
   }
 
-  inject(NotificationStateService).info(
+  notifications.info(
     'Workspace required',
     'Select a workspace before opening this area.',
   );
 
-  return inject(Router).createUrlTree(['/dashboard']);
+  return router.createUrlTree(['/dashboard']);
 };

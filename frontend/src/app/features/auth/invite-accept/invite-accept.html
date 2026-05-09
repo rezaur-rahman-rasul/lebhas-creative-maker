@@ -83,15 +83,17 @@
           [externalError]="confirmPasswordError()"
         />
 
-        <app-button
-          type="submit"
-          icon="arrow-right"
-          [fullWidth]="true"
-          [loading]="auth.authLoading()"
-          [disabled]="!invitationToken()"
-        >
-          Accept invitation
-        </app-button>
+        <div class="pt-2">
+          <app-button
+            type="submit"
+            icon="arrow-right"
+            [fullWidth]="true"
+            [loading]="auth.authLoading()"
+            [disabled]="!invitationToken()"
+          >
+            Accept invitation
+          </app-button>
+        </div>
       </form>
 
       <p class="mt-6 text-center text-sm text-muted">

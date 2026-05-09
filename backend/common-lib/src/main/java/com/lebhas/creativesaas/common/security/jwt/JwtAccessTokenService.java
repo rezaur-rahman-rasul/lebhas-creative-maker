@@ -88,6 +88,11 @@ public class JwtAccessTokenService implements JwtTokenParser {
                 return Optional.empty();
             }
             String tokenId = claims.getId();
+            String subject = claims.getSubject();
+            String email = claims.get(CLAIM_EMAIL, String.class);
+            if (tokenId == null || tokenId.isBlank() || subject == null || subject.isBlank() || email == null || email.isBlank()) {
+                return Optional.empty();
+            }
             if (accessTokenRevocationStore.isRevoked(tokenId)) {
                 return Optional.empty();
             }
@@ -101,9 +106,9 @@ public class JwtAccessTokenService implements JwtTokenParser {
                     .map(UUID::fromString)
                     .orElse(null);
             return Optional.of(new AuthenticatedPrincipal(
-                    UUID.fromString(claims.getSubject()),
+                    UUID.fromString(subject),
                     workspaceId,
-                    claims.get(CLAIM_EMAIL, String.class),
+                    email,
                     roles,
                     permissions,
                     tokenId,

@@ -1,7 +1,9 @@
+import { HttpContext } from '@angular/common/http';
 import { Injectable, computed, inject, signal } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 
 import { normalizeHttpError } from '@app/core/api/http-error';
+import { SKIP_ERROR_TOAST } from '@app/core/auth/auth-request-context';
 import { CurrentUserStore } from '@app/core/auth/current-user.store';
 import { NotificationStateService } from '@app/core/state/notification-state.service';
 import { ApiError } from '@app/shared/models/api-response.model';
@@ -56,6 +58,17 @@ export class WorkspaceStore {
   readonly hasWorkspace = computed(
     () => Boolean(this.currentWorkspaceSignal() ?? this.auth.activeWorkspaceId()),
   );
+  readonly selectedWorkspaceSummary = computed(() => {
+    const activeWorkspaceId = this.auth.activeWorkspaceId();
+    if (!activeWorkspaceId) {
+      return null;
+    }
+
+    return (
+      this.accessibleWorkspacesSignal().find((workspace) => workspace.id === activeWorkspaceId) ??
+      null
+    );
+  });
   readonly brandProfileCompletion = computed(() => {
     const profile = this.brandProfileSignal();
     if (!profile) {
@@ -78,131 +91,120 @@ export class WorkspaceStore {
     return Math.round((completedFields / 10) * 100);
   });
   readonly isBrandProfileComplete = computed(() => this.brandProfileCompletion() >= 80);
-  readonly canManageCrew = computed(() => {
-    if (this.auth.currentRole() === 'MASTER') {
-      return false;
-    }
-
-    return this.hasAnyPermission(['CREW_VIEW', 'CREW_INVITE', 'CREW_UPDATE', 'CREW_REMOVE']);
-  });
-  readonly canEditWorkspace = computed(() => {
-    if (this.auth.currentRole() !== 'ADMIN') {
-      return false;
-    }
-
-    return this.hasAnyPermission(['WORKSPACE_UPDATE', 'WORKSPACE_SETTINGS_UPDATE']);
-  });
-  readonly canEditBrandProfile = computed(() => {
-    if (this.auth.currentRole() !== 'ADMIN') {
-      return false;
-    }
-
-    return this.hasAnyPermission(['BRAND_PROFILE_UPDATE']);
-  });
+  readonly canManageCrew = computed(() =>
+    this.hasAnyPermission(['CREW_VIEW', 'CREW_INVITE', 'CREW_UPDATE', 'CREW_REMOVE']),
+  );
+  readonly canEditWorkspace = computed(() =>
+    this.hasAnyPermission(['WORKSPACE_UPDATE', 'WORKSPACE_SETTINGS_UPDATE']),
+  );
+  readonly canEditBrandProfile = computed(() =>
+    this.hasAnyPermission(['BRAND_PROFILE_UPDATE']),
+  );
 
   async loadWorkspaceDashboardContext(workspaceId?: string): Promise<void> {
-    const id = this.resolveWorkspaceId(workspaceId);
-    if (!id) {
-      this.workspaceErrorSignal.set('Workspace context is unavailable.');
-      return;
-    }
+    await this.loadWithWorkspaceContext(
+      async (id) => {
+        const [workspace, settings, brandProfile, crewMembers] = await Promise.all([
+          firstValueFrom(this.workspaceService.getWorkspace(id, this.workspaceRequestContext())),
+          firstValueFrom(this.workspaceService.getSettings(id, this.workspaceRequestContext())),
+          firstValueFrom(this.brandProfileService.getBrandProfile(id, this.workspaceRequestContext())),
+          firstValueFrom(this.crewService.listCrew(id, this.workspaceRequestContext())),
+        ]);
 
-    await this.runLoader(async () => {
-      const [workspace, settings, brandProfile, crewMembers] = await Promise.all([
-        firstValueFrom(this.workspaceService.getWorkspace(id)),
-        firstValueFrom(this.workspaceService.getSettings(id)),
-        firstValueFrom(this.brandProfileService.getBrandProfile(id)),
-        firstValueFrom(this.crewService.listCrew(id)),
-      ]);
-
-      this.currentWorkspaceSignal.set(workspace);
-      this.workspaceSettingsSignal.set(settings);
-      this.brandProfileSignal.set(brandProfile);
-      this.crewMembersSignal.set(crewMembers);
-    });
+        this.currentWorkspaceSignal.set(workspace);
+        this.workspaceSettingsSignal.set(settings);
+        this.brandProfileSignal.set(brandProfile);
+        this.crewMembersSignal.set(crewMembers);
+      },
+      workspaceId,
+    );
   }
 
   async loadWorkspaceSettingsContext(workspaceId?: string): Promise<void> {
-    const id = this.resolveWorkspaceId(workspaceId);
-    if (!id) {
-      this.workspaceErrorSignal.set('Workspace context is unavailable.');
-      return;
-    }
+    await this.loadWithWorkspaceContext(
+      async (id) => {
+        const [workspace, settings] = await Promise.all([
+          firstValueFrom(this.workspaceService.getWorkspace(id, this.workspaceRequestContext())),
+          firstValueFrom(this.workspaceService.getSettings(id, this.workspaceRequestContext())),
+        ]);
 
-    await this.runLoader(async () => {
-      const [workspace, settings] = await Promise.all([
-        firstValueFrom(this.workspaceService.getWorkspace(id)),
-        firstValueFrom(this.workspaceService.getSettings(id)),
-      ]);
-
-      this.currentWorkspaceSignal.set(workspace);
-      this.workspaceSettingsSignal.set(settings);
-    });
+        this.currentWorkspaceSignal.set(workspace);
+        this.workspaceSettingsSignal.set(settings);
+      },
+      workspaceId,
+    );
   }
 
   async loadBrandProfileContext(workspaceId?: string): Promise<void> {
-    const id = this.resolveWorkspaceId(workspaceId);
-    if (!id) {
-      this.workspaceErrorSignal.set('Workspace context is unavailable.');
-      return;
-    }
+    await this.loadWithWorkspaceContext(
+      async (id) => {
+        const [workspace, brandProfile] = await Promise.all([
+          firstValueFrom(this.workspaceService.getWorkspace(id, this.workspaceRequestContext())),
+          firstValueFrom(this.brandProfileService.getBrandProfile(id, this.workspaceRequestContext())),
+        ]);
 
-    await this.runLoader(async () => {
-      const [workspace, brandProfile] = await Promise.all([
-        firstValueFrom(this.workspaceService.getWorkspace(id)),
-        firstValueFrom(this.brandProfileService.getBrandProfile(id)),
-      ]);
-
-      this.currentWorkspaceSignal.set(workspace);
-      this.brandProfileSignal.set(brandProfile);
-    });
+        this.currentWorkspaceSignal.set(workspace);
+        this.brandProfileSignal.set(brandProfile);
+      },
+      workspaceId,
+    );
   }
 
   async loadCrewContext(workspaceId?: string): Promise<void> {
-    const id = this.resolveWorkspaceId(workspaceId);
-    if (!id) {
-      this.workspaceErrorSignal.set('Workspace context is unavailable.');
-      return;
-    }
+    await this.loadWithWorkspaceContext(
+      async (id) => {
+        const [workspace, crewMembers] = await Promise.all([
+          firstValueFrom(this.workspaceService.getWorkspace(id, this.workspaceRequestContext())),
+          firstValueFrom(this.crewService.listCrew(id, this.workspaceRequestContext())),
+        ]);
 
-    await this.runLoader(async () => {
-      const [workspace, crewMembers] = await Promise.all([
-        firstValueFrom(this.workspaceService.getWorkspace(id)),
-        firstValueFrom(this.crewService.listCrew(id)),
-      ]);
-
-      this.currentWorkspaceSignal.set(workspace);
-      this.crewMembersSignal.set(crewMembers);
-    });
+        this.currentWorkspaceSignal.set(workspace);
+        this.crewMembersSignal.set(crewMembers);
+      },
+      workspaceId,
+    );
   }
 
   async loadCrewReadonlyContext(workspaceId?: string): Promise<void> {
-    const id = this.resolveWorkspaceId(workspaceId);
-    if (!id) {
-      this.workspaceErrorSignal.set('Workspace context is unavailable.');
-      return;
-    }
+    await this.loadWithWorkspaceContext(
+      async (id) => {
+        const [workspace, brandProfile] = await Promise.all([
+          firstValueFrom(this.workspaceService.getWorkspace(id, this.workspaceRequestContext())),
+          firstValueFrom(this.brandProfileService.getBrandProfile(id, this.workspaceRequestContext())),
+        ]);
 
-    await this.runLoader(async () => {
-      const [workspace, brandProfile] = await Promise.all([
-        firstValueFrom(this.workspaceService.getWorkspace(id)),
-        firstValueFrom(this.brandProfileService.getBrandProfile(id)),
-      ]);
-
-      this.currentWorkspaceSignal.set(workspace);
-      this.brandProfileSignal.set(brandProfile);
-    });
+        this.currentWorkspaceSignal.set(workspace);
+        this.brandProfileSignal.set(brandProfile);
+      },
+      workspaceId,
+    );
   }
 
   async loadAccessibleWorkspaces(): Promise<void> {
     await this.runLoader(async () => {
       const workspaces = await firstValueFrom(this.workspaceService.getMyWorkspaces());
       this.accessibleWorkspacesSignal.set(workspaces);
+      this.syncWorkspaceContext(workspaces);
     });
   }
 
+  selectWorkspace(workspaceId: string): void {
+    const accessibleWorkspaces = this.accessibleWorkspacesSignal();
+    if (
+      accessibleWorkspaces.length &&
+      !accessibleWorkspaces.some((workspace) => workspace.id === workspaceId)
+    ) {
+      this.workspaceErrorSignal.set('You no longer have access to this workspace.');
+      return;
+    }
+
+    this.auth.setActiveWorkspaceId(workspaceId);
+    this.workspaceErrorSignal.set(null);
+    this.resetWorkspaceContext();
+  }
+
   async saveWorkspaceSettings(payload: SaveWorkspaceSettingsPayload): Promise<WorkspaceActionResult> {
-    const workspaceId = this.resolveWorkspaceId();
+    const workspaceId = await this.resolveWorkspaceId();
     if (!workspaceId) {
       return this.missingWorkspaceResult();
     }
@@ -235,7 +237,7 @@ export class WorkspaceStore {
   }
 
   async saveBrandProfile(payload: UpdateBrandProfilePayload): Promise<WorkspaceActionResult> {
-    const workspaceId = this.resolveWorkspaceId();
+    const workspaceId = await this.resolveWorkspaceId();
     if (!workspaceId) {
       return this.missingWorkspaceResult();
     }
@@ -260,7 +262,7 @@ export class WorkspaceStore {
   }
 
   async inviteCrew(payload: InviteCrewPayload): Promise<WorkspaceActionResult> {
-    const workspaceId = this.resolveWorkspaceId();
+    const workspaceId = await this.resolveWorkspaceId();
     if (!workspaceId) {
       return this.missingWorkspaceResult();
     }
@@ -292,7 +294,7 @@ export class WorkspaceStore {
     crewId: string,
     payload: UpdateCrewMemberPayload,
   ): Promise<WorkspaceActionResult> {
-    const workspaceId = this.resolveWorkspaceId();
+    const workspaceId = await this.resolveWorkspaceId();
     if (!workspaceId) {
       return this.missingWorkspaceResult();
     }
@@ -322,7 +324,7 @@ export class WorkspaceStore {
   }
 
   async removeCrewMember(crewId: string): Promise<WorkspaceActionResult> {
-    const workspaceId = this.resolveWorkspaceId();
+    const workspaceId = await this.resolveWorkspaceId();
     if (!workspaceId) {
       return this.missingWorkspaceResult();
     }
@@ -350,14 +352,133 @@ export class WorkspaceStore {
       this.workspaceErrorSignal.set(null);
       await operation();
     } catch (error) {
-      this.workspaceErrorSignal.set(normalizeHttpError(error).message);
+      this.workspaceErrorSignal.set(this.mapWorkspaceLoadError(error));
     } finally {
       this.workspaceLoadingSignal.set(false);
     }
   }
 
-  private resolveWorkspaceId(explicitWorkspaceId?: string): string | null {
-    return explicitWorkspaceId ?? this.currentWorkspaceSignal()?.id ?? this.auth.activeWorkspaceId();
+  private async loadWithWorkspaceContext(
+    operation: (workspaceId: string) => Promise<void>,
+    explicitWorkspaceId?: string,
+  ): Promise<void> {
+    const workspaceId = await this.resolveWorkspaceId(explicitWorkspaceId);
+    if (!workspaceId) {
+      this.workspaceErrorSignal.set('Workspace context is unavailable.');
+      return;
+    }
+
+    await this.runLoader(async () => {
+      try {
+        await operation(workspaceId);
+      } catch (error) {
+        if (!(await this.tryRecoverWorkspaceAccess(workspaceId, error, operation))) {
+          throw error;
+        }
+      }
+    });
+  }
+
+  private async resolveWorkspaceId(explicitWorkspaceId?: string): Promise<string | null> {
+    const currentWorkspaceId =
+      explicitWorkspaceId ?? this.currentWorkspaceSignal()?.id ?? this.auth.activeWorkspaceId();
+
+    if (currentWorkspaceId) {
+      return currentWorkspaceId;
+    }
+
+    return this.bootstrapWorkspaceId();
+  }
+
+  private async resolveFallbackWorkspaceId(currentWorkspaceId: string): Promise<string | null> {
+    const workspaces = await this.fetchAccessibleWorkspaces();
+    const fallbackWorkspace = workspaces.find((workspace) => workspace.id !== currentWorkspaceId);
+
+    return fallbackWorkspace?.id ?? null;
+  }
+
+  private async bootstrapWorkspaceId(): Promise<string | null> {
+    if (this.auth.currentRole() === 'MASTER') {
+      return null;
+    }
+
+    const workspaces = await this.fetchAccessibleWorkspaces();
+    if (workspaces.length !== 1) {
+      return null;
+    }
+
+    const nextWorkspace = workspaces[0];
+
+    if (!nextWorkspace) {
+      return null;
+    }
+
+    this.auth.setActiveWorkspaceId(nextWorkspace.id);
+    return nextWorkspace.id;
+  }
+
+  private async fetchAccessibleWorkspaces(): Promise<readonly WorkspaceSummary[]> {
+    const workspaces = await firstValueFrom(
+      this.workspaceService.getMyWorkspaces(this.workspaceRequestContext()),
+    );
+    this.accessibleWorkspacesSignal.set(workspaces);
+    this.syncWorkspaceContext(workspaces);
+    return workspaces;
+  }
+
+  private async tryRecoverWorkspaceAccess(
+    currentWorkspaceId: string,
+    error: unknown,
+    operation: (workspaceId: string) => Promise<void>,
+  ): Promise<boolean> {
+    if (!this.shouldSwitchWorkspace(error)) {
+      return false;
+    }
+
+    const fallbackWorkspaceId = await this.resolveFallbackWorkspaceId(currentWorkspaceId);
+    if (!fallbackWorkspaceId) {
+      return false;
+    }
+
+    this.selectWorkspace(fallbackWorkspaceId);
+    this.notifications.info(
+      'Workspace changed',
+      'The previous workspace is no longer available. The next accessible workspace has been opened.',
+    );
+    await operation(fallbackWorkspaceId);
+    return true;
+  }
+
+  private shouldSwitchWorkspace(error: unknown): boolean {
+    const normalized = normalizeHttpError(error);
+    return normalized.status === 403 || normalized.status === 404;
+  }
+
+  private syncWorkspaceContext(workspaces: readonly WorkspaceSummary[]): void {
+    const activeWorkspaceId = this.auth.activeWorkspaceId();
+    if (
+      activeWorkspaceId &&
+      !workspaces.some((workspace) => workspace.id === activeWorkspaceId) &&
+      this.auth.currentRole() !== 'MASTER'
+    ) {
+      this.auth.setActiveWorkspaceId(null);
+      this.resetWorkspaceContext();
+    }
+
+    if (
+      !this.auth.activeWorkspaceId() &&
+      this.auth.currentRole() !== 'MASTER' &&
+      workspaces.length === 1
+    ) {
+      this.auth.setActiveWorkspaceId(workspaces[0].id);
+    }
+  }
+
+  private resetWorkspaceContext(): void {
+    this.currentWorkspaceSignal.set(null);
+    this.workspaceSettingsSignal.set(null);
+    this.brandProfileSignal.set(null);
+    this.crewMembersSignal.set([]);
   }
 
   private hasAnyPermission(
@@ -405,5 +526,27 @@ export class WorkspaceStore {
       }
       return result;
     }, {});
+  }
+
+  private mapWorkspaceLoadError(error: unknown): string {
+    const normalized = normalizeHttpError(error);
+
+    if (normalized.status === 403) {
+      return 'You no longer have access to this workspace.';
+    }
+
+    if (normalized.status === 404) {
+      return 'The assigned workspace could not be found for this account.';
+    }
+
+    if (normalized.status >= 500 || normalized.message === 'Unexpected server error') {
+      return 'Workspace data could not be loaded right now.';
+    }
+
+    return normalized.message;
+  }
+
+  private workspaceRequestContext(): HttpContext {
+    return new HttpContext().set(SKIP_ERROR_TOAST, true);
   }
 }

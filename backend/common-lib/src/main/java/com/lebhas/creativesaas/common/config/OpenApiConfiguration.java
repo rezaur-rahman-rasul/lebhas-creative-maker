@@ -59,4 +59,15 @@ public class OpenApiConfiguration {
                 .pathsToMatch("/api/v1/workspaces/**")
                 .build();
     }
+
+    @Bean
+    GroupedOpenApi promptApiGroup() {
+        return GroupedOpenApi.builder()
+                .group("prompts")
+                .pathsToMatch(
+                        "/api/v1/workspaces/*/prompt-templates/**",
+                        "/api/v1/workspaces/*/prompts/**",
+                        "/api/v1/workspaces/*/prompt-history/**")
+                .build();
+    }
 }

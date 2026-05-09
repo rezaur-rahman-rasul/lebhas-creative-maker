@@ -4,7 +4,7 @@ export const environment: AppEnvironment = {
   production: false,
   appName: 'Creative SaaS',
   appVersion: '0.1.0',
-  apiBaseUrl: 'http://localhost:8080',
+  apiBaseUrl: '',
   authApiPrefix: '/api/v1/auth',
   workspaceHeaderName: 'X-Workspace-ID',
   correlationIdHeaderName: 'X-Correlation-ID',

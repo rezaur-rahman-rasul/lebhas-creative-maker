@@ -1,3 +1,4 @@
+import { HttpContext } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { map } from 'rxjs';
 
@@ -56,15 +57,15 @@ export class WorkspaceService {
       .pipe(map(({ data }) => mapWorkspace(data)));
   }
 
-  getMyWorkspaces() {
+  getMyWorkspaces(context?: HttpContext) {
     return this.api
-      .get<readonly WorkspaceSummaryResponseDto[]>('/api/v1/workspaces/me')
+      .get<readonly WorkspaceSummaryResponseDto[]>('/api/v1/workspaces/me', { context })
       .pipe(map(({ data }) => data.map(mapWorkspaceSummary)));
   }
 
-  getWorkspace(id: string) {
+  getWorkspace(id: string, context?: HttpContext) {
     return this.api
-      .get<WorkspaceResponseDto>(`/api/v1/workspaces/${id}`)
+      .get<WorkspaceResponseDto>(`/api/v1/workspaces/${id}`, { context })
       .pipe(map(({ data }) => mapWorkspace(data)));
   }
 
@@ -74,9 +75,9 @@ export class WorkspaceService {
       .pipe(map(({ data }) => mapWorkspace(data)));
   }
 
-  getSettings(id: string) {
+  getSettings(id: string, context?: HttpContext) {
     return this.api
-      .get<WorkspaceSettingsResponseDto>(`/api/v1/workspaces/${id}/settings`)
+      .get<WorkspaceSettingsResponseDto>(`/api/v1/workspaces/${id}/settings`, { context })
       .pipe(map(({ data }) => mapWorkspaceSettings(data)));
   }
 

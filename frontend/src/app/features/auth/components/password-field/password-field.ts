@@ -15,6 +15,7 @@ export class PasswordFieldComponent {
   readonly label = input.required<string>();
   readonly placeholder = input('Enter password');
   readonly autocomplete = input('current-password');
+  readonly testId = input<string | null>(null);
   readonly control = input.required<FormControl<string>>();
   readonly submitted = input(false);
   readonly externalError = input<string | null>(null);

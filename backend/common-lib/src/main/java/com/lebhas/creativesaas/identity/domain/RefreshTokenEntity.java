@@ -95,6 +95,14 @@ public class RefreshTokenEntity extends BaseEntity {
         return revokedAt;
     }
 
+    public String getClientIp() {
+        return clientIp;
+    }
+
+    public String getUserAgent() {
+        return userAgent;
+    }
+
     public boolean isRevoked() {
         return revokedAt != null;
     }

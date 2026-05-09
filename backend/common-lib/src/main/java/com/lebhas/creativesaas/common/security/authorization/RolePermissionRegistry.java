@@ -37,6 +37,15 @@ public class RolePermissionRegistry {
                 Permission.CREATIVE_EDIT,
                 Permission.CREATIVE_DOWNLOAD,
                 Permission.CREATIVE_SUBMIT,
+                Permission.ASSET_VIEW,
+                Permission.ASSET_UPLOAD,
+                Permission.ASSET_UPDATE,
+                Permission.ASSET_DELETE,
+                Permission.ASSET_FOLDER_MANAGE,
+                Permission.PROMPT_TEMPLATE_VIEW,
+                Permission.PROMPT_TEMPLATE_MANAGE,
+                Permission.PROMPT_INTELLIGENCE_USE,
+                Permission.PROMPT_HISTORY_VIEW,
                 Permission.SESSION_MANAGE));
         permissionsByRole.put(Role.CREW, EnumSet.noneOf(Permission.class));
     }

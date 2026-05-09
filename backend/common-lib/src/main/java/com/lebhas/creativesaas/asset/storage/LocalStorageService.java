@@ -63,6 +63,33 @@ public class LocalStorageService implements StorageService, LocalAssetContentAcc
     }
 
     @Override
+    public StoredObject storeGenerated(GeneratedStorageUploadRequest request) {
+        String storageKey = storagePathResolver.resolveGenerated(
+                request.workspaceId(),
+                request.creativeType(),
+                request.outputId(),
+                request.fileExtension());
+        Path root = storageProperties.getLocal().getRootPath().toAbsolutePath().normalize();
+        Path targetFile = root.resolve(storageKey).normalize();
+        if (!targetFile.startsWith(root)) {
+            throw new BusinessException(ErrorCode.ASSET_STORAGE_FAILURE, "Resolved storage path is outside the configured root");
+        }
+        try {
+            Files.createDirectories(targetFile.getParent());
+            Files.write(targetFile, request.content());
+            return new StoredObject(
+                    request.outputId() + "." + request.fileExtension(),
+                    storageProperties.getBucket(),
+                    storageKey,
+                    null,
+                    null,
+                    null);
+        } catch (IOException exception) {
+            throw new BusinessException(ErrorCode.ASSET_STORAGE_FAILURE, "Local generated creative storage failed");
+        }
+    }
+
+    @Override
     public SignedAssetUrl generatePreviewUrl(AssetEntity asset) {
         return localSignedAssetUrlService.createUrl(asset.getId(), LocalAssetAccessMode.PREVIEW);
     }

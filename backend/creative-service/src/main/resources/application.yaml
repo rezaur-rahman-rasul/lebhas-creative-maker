@@ -8,3 +8,8 @@ spring:
 
 server:
   port: ${SERVER_PORT:8084}
+
+platform:
+  generation:
+    queue:
+      worker-enabled: ${GENERATION_WORKER_ENABLED:true}

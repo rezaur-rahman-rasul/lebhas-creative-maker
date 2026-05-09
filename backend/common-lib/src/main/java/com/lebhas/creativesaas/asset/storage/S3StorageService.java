@@ -68,6 +68,32 @@ public class S3StorageService implements StorageService {
     }
 
     @Override
+    public StoredObject storeGenerated(GeneratedStorageUploadRequest request) {
+        String storageKey = storagePathResolver.resolveGenerated(
+                request.workspaceId(),
+                request.creativeType(),
+                request.outputId(),
+                request.fileExtension());
+        PutObjectRequest putObjectRequest = PutObjectRequest.builder()
+                .bucket(storageProperties.getBucket())
+                .key(storageKey)
+                .contentType(request.mimeType())
+                .build();
+        try {
+            s3Client.putObject(putObjectRequest, RequestBody.fromBytes(request.content()));
+            return new StoredObject(
+                    request.outputId() + "." + request.fileExtension(),
+                    storageProperties.getBucket(),
+                    storageKey,
+                    null,
+                    null,
+                    null);
+        } catch (Exception exception) {
+            throw new BusinessException(ErrorCode.ASSET_STORAGE_FAILURE, "S3 generated creative upload failed");
+        }
+    }
+
+    @Override
     public SignedAssetUrl generatePreviewUrl(AssetEntity asset) {
         return presign(asset, "inline");
     }

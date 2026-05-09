@@ -14,6 +14,8 @@ public interface StorageService {
 
     StoredObject store(StorageUploadRequest request);
 
+    StoredObject storeGenerated(GeneratedStorageUploadRequest request);
+
     SignedAssetUrl generatePreviewUrl(AssetEntity asset);
 
     SignedAssetUrl generateDownloadUrl(AssetEntity asset);
@@ -29,6 +31,16 @@ public interface StorageService {
             String storedFileName,
             String mimeType,
             MultipartFile file
+    ) {
+    }
+
+    record GeneratedStorageUploadRequest(
+            UUID workspaceId,
+            UUID outputId,
+            String creativeType,
+            String fileExtension,
+            String mimeType,
+            byte[] content
     ) {
     }
 

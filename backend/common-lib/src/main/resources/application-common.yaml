@@ -129,6 +129,37 @@ platform:
       max-requests-per-workspace: ${PROMPT_RATE_LIMIT_WORKSPACE:300}
       max-requests-per-ip: ${PROMPT_RATE_LIMIT_IP:120}
       window: ${PROMPT_RATE_LIMIT_WINDOW:1h}
+  generation:
+    image-provider: ${GENERATION_IMAGE_PROVIDER:DISABLED}
+    video-provider: ${GENERATION_VIDEO_PROVIDER:GENERIC_VIDEO}
+    max-attempts: ${GENERATION_MAX_ATTEMPTS:3}
+    request-timeout: ${GENERATION_PROVIDER_TIMEOUT:60s}
+    queue:
+      provider: ${GENERATION_QUEUE_PROVIDER:IN_MEMORY}
+      worker-enabled: ${GENERATION_WORKER_ENABLED:false}
+      name: ${GENERATION_QUEUE_NAME:creative.generation.jobs}
+      exchange: ${GENERATION_QUEUE_EXCHANGE:creative.generation}
+      routing-key: ${GENERATION_QUEUE_ROUTING_KEY:generation.job.created}
+      dead-letter-exchange: ${GENERATION_QUEUE_DLX:creative.generation.dlx}
+      dead-letter-queue: ${GENERATION_QUEUE_DLQ:creative.generation.jobs.dlq}
+      dead-letter-routing-key: ${GENERATION_QUEUE_DLQ_ROUTING_KEY:generation.job.dead}
+    rate-limit:
+      max-requests-per-user: ${GENERATION_RATE_LIMIT_USER:30}
+      max-requests-per-workspace: ${GENERATION_RATE_LIMIT_WORKSPACE:150}
+      max-requests-per-ip: ${GENERATION_RATE_LIMIT_IP:60}
+      window: ${GENERATION_RATE_LIMIT_WINDOW:1h}
+    open-ai:
+      base-url: ${OPENAI_IMAGE_BASE_URL:https://api.openai.com}
+      image-path: ${OPENAI_IMAGE_PATH:/v1/images/generations}
+      api-key: ${OPENAI_API_KEY:}
+      model: ${OPENAI_IMAGE_MODEL:gpt-image-1.5}
+      organization: ${OPENAI_ORGANIZATION:}
+      project: ${OPENAI_PROJECT:}
+    stability:
+      base-url: ${STABILITY_BASE_URL:https://api.stability.ai}
+      generation-path: ${STABILITY_IMAGE_PATH:/v2beta/stable-image/generate/core}
+      api-key: ${STABILITY_API_KEY:}
+      model: ${STABILITY_IMAGE_MODEL:stable-image-core}
   ai:
     text:
       provider: ${TEXT_AI_PROVIDER:DISABLED}

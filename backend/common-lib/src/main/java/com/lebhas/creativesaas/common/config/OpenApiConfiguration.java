@@ -70,4 +70,14 @@ public class OpenApiConfiguration {
                         "/api/v1/workspaces/*/prompt-history/**")
                 .build();
     }
+
+    @Bean
+    GroupedOpenApi creativeGenerationApiGroup() {
+        return GroupedOpenApi.builder()
+                .group("creative-generation")
+                .pathsToMatch(
+                        "/api/v1/workspaces/*/creative-generations/**",
+                        "/api/v1/workspaces/*/creative-outputs/**")
+                .build();
+    }
 }

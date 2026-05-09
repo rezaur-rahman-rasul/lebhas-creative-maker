@@ -27,4 +27,18 @@ public class StoragePathResolver {
                 assetId,
                 storedFileName);
     }
+
+    public String resolveGenerated(UUID workspaceId, String creativeType, UUID outputId, String fileExtension) {
+        LocalDate today = LocalDate.now(clock);
+        String normalizedExtension = fileExtension == null || fileExtension.isBlank()
+                ? "bin"
+                : fileExtension.toLowerCase(Locale.ROOT).replace(".", "");
+        return "workspaces/%s/generated/%s/%d/%02d/%s.%s".formatted(
+                workspaceId,
+                creativeType.toLowerCase(Locale.ROOT),
+                today.getYear(),
+                today.getMonthValue(),
+                outputId,
+                normalizedExtension);
+    }
 }
